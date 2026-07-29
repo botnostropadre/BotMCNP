@@ -1,0 +1,26 @@
+{
+  "name": "botmcnp",
+  "version": "1.0.0",
+  "description": "Bot de gerenciamento do Padre Nosso MC",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@discordjs/builders": "^1.14.1",
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

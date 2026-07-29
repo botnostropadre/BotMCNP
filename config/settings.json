@@ -1,0 +1,37 @@
+{
+    "guildId": "1530455909992632451",
+
+    "canais": {
+        "registro": "1530460702861430914",
+        "logs": "1530680762259476672",
+        "boasVindas": "1530455910689013782"
+    },
+
+    "paineis": {
+        "financeiro": "",
+        "dashboard": ""
+    },
+
+    "cargos": {
+        "presidente": "1530456364059721823",
+        "vice": "1530468429008601118",
+        "tesouraria": "1531838445045940296",
+        "sargento": "1530456770382794773",
+        "secretario": "1530457451843813536",
+        "membro": "1530458236048642068",
+        "prospect": "1530458943116148896"
+    },
+
+    "nickname": "{nome} \"{vulgo}\" {sobrenome}",
+
+    "mc": {
+        "nome": "Padre Nosso MC",
+        "tag": "PNMC"
+    },
+
+    "cores": {
+        "verde": "#009246",
+        "branco": "#FFFFFF",
+        "vermelho": "#CE2B37"
+    }
+}
