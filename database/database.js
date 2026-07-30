@@ -1,7 +1,31 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const fs = require("fs");
 
-const caminhoBanco = path.join(__dirname, "membros.db");
+// ======================================================
+// CAMINHO DO BANCO
+// ======================================================
+// No Railway usa o Volume Persistente.
+// No computador continua usando a pasta database.
+
+const pastaBanco =
+    process.env.RAILWAY_VOLUME_MOUNT_PATH ||
+    __dirname;
+
+if (!fs.existsSync(pastaBanco)) {
+    fs.mkdirSync(pastaBanco, { recursive: true });
+}
+
+const caminhoBanco = path.join(
+    pastaBanco,
+    "membros.db"
+);
+
+console.log(`📁 Banco localizado em: ${caminhoBanco}`);
+
+// ======================================================
+// CONEXÃO
+// ======================================================
 
 const db = new sqlite3.Database(
     caminhoBanco,
@@ -141,89 +165,19 @@ async function iniciarBanco() {
             )
         `);
 
-        /*
-         * Caso o banco já exista com a estrutura antiga,
-         * estas verificações adicionam somente as colunas
-         * que estiverem faltando.
-         */
-
-        await garantirColuna(
-            "membros",
-            "nome",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "vulgo",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "sobrenome",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "nomeCompleto",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "secretario",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "cargo",
-            "TEXT DEFAULT 'Prospect'"
-        );
-
-        await garantirColuna(
-            "membros",
-            "advertencias",
-            "INTEGER DEFAULT 0"
-        );
-
-        await garantirColuna(
-            "membros",
-            "promocoes",
-            "INTEGER DEFAULT 0"
-        );
-
-        await garantirColuna(
-            "membros",
-            "rebaixamentos",
-            "INTEGER DEFAULT 0"
-        );
-
-        await garantirColuna(
-            "membros",
-            "status",
-            "TEXT DEFAULT 'Ativo'"
-        );
-
-        await garantirColuna(
-            "membros",
-            "dataRegistro",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "ultimaPromocao",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "membros",
-            "ultimaAdvertencia",
-            "TEXT"
-        );
+        await garantirColuna("membros","nome","TEXT");
+        await garantirColuna("membros","vulgo","TEXT");
+        await garantirColuna("membros","sobrenome","TEXT");
+        await garantirColuna("membros","nomeCompleto","TEXT");
+        await garantirColuna("membros","secretario","TEXT");
+        await garantirColuna("membros","cargo","TEXT DEFAULT 'Prospect'");
+        await garantirColuna("membros","advertencias","INTEGER DEFAULT 0");
+        await garantirColuna("membros","promocoes","INTEGER DEFAULT 0");
+        await garantirColuna("membros","rebaixamentos","INTEGER DEFAULT 0");
+        await garantirColuna("membros","status","TEXT DEFAULT 'Ativo'");
+        await garantirColuna("membros","dataRegistro","TEXT");
+        await garantirColuna("membros","ultimaPromocao","TEXT");
+        await garantirColuna("membros","ultimaAdvertencia","TEXT");
 
         // ==================================================
         // ADVERTÊNCIAS
@@ -358,7 +312,7 @@ async function iniciarBanco() {
     } catch (error) {
 
         console.error(
-            "❌ Erro ao preparar o banco de dados:",
+            "❌ Erro ao preparar o banco:",
             error
         );
 
