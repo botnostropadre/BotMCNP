@@ -53,15 +53,10 @@ const {
 // ======================================================
 
 const client = new Client({
-
     intents: [
-
         GatewayIntentBits.Guilds,
-
         GatewayIntentBits.GuildMembers
-
     ]
-
 });
 
 client.commands = new Collection();
@@ -81,9 +76,7 @@ const commandFiles = fs
 
 for (const file of commandFiles) {
 
-    console.log(
-        `Carregando: ${file}`
-    );
+    console.log(`Carregando: ${file}`);
 
     try {
 
@@ -158,15 +151,10 @@ client.once("ready", () => {
     client.user.setPresence({
 
         activities: [
-
             {
-
                 name: "Padre Nosso MC",
-
                 type: ActivityType.Watching
-
             }
-
         ],
 
         status: "online"
@@ -182,6 +170,20 @@ client.once("ready", () => {
 client.on(
     "interactionCreate",
     async interaction => {
+
+        const idadeInteracao =
+            Date.now() - interaction.createdTimestamp;
+
+        const identificador =
+            interaction.customId ||
+            interaction.commandName ||
+            "sem-id";
+
+        console.log(
+            `[INTERAÇÃO] Tipo: ${interaction.type} | ` +
+            `ID: ${identificador} | ` +
+            `Atraso: ${idadeInteracao}ms`
+        );
 
         try {
 
@@ -217,7 +219,28 @@ client.on(
             }
 
             // ==========================================
-            // BOTÕES
+            // BOTÕES DO DASHBOARD
+            // ==========================================
+
+            if (
+                interaction.isButton() &&
+                [
+                    "dashboard",
+                    "dash_membros",
+                    "dash_financeiro"
+                ].includes(interaction.customId)
+            ) {
+
+                await handleDashboard(
+                    interaction
+                );
+
+                return;
+
+            }
+
+            // ==========================================
+            // DEMAIS BOTÕES
             // ==========================================
 
             if (
@@ -227,21 +250,6 @@ client.on(
                 await handleButton(
                     interaction
                 );
-
-                /*
-                 * O dashboard também utiliza botões.
-                 * Cada handler verifica seu próprio customId.
-                 */
-                if (
-                    !interaction.replied &&
-                    !interaction.deferred
-                ) {
-
-                    await handleDashboard(
-                        interaction
-                    );
-
-                }
 
                 return;
 
@@ -276,37 +284,43 @@ client.on(
                 );
 
                 if (
-                    !interaction.replied &&
-                    !interaction.deferred
+                    interaction.replied ||
+                    interaction.deferred
                 ) {
 
-                    await handleGravidadeMenu(
-                        interaction
-                    );
+                    return;
 
                 }
+
+                await handleGravidadeMenu(
+                    interaction
+                );
 
                 if (
-                    !interaction.replied &&
-                    !interaction.deferred
+                    interaction.replied ||
+                    interaction.deferred
                 ) {
 
-                    await handlePromoverMenu(
-                        interaction
-                    );
+                    return;
 
                 }
+
+                await handlePromoverMenu(
+                    interaction
+                );
 
                 if (
-                    !interaction.replied &&
-                    !interaction.deferred
+                    interaction.replied ||
+                    interaction.deferred
                 ) {
 
-                    await handleRebaixarMenu(
-                        interaction
-                    );
+                    return;
 
                 }
+
+                await handleRebaixarMenu(
+                    interaction
+                );
 
                 return;
 
@@ -325,15 +339,17 @@ client.on(
                 );
 
                 if (
-                    !interaction.replied &&
-                    !interaction.deferred
+                    interaction.replied ||
+                    interaction.deferred
                 ) {
 
-                    await handleAdvertenciaModal(
-                        interaction
-                    );
+                    return;
 
                 }
+
+                await handleAdvertenciaModal(
+                    interaction
+                );
 
                 return;
 
@@ -347,6 +363,23 @@ client.on(
 
             console.error(error);
 
+            console.error(
+                `A interação tinha ${
+                    Date.now() -
+                    interaction.createdTimestamp
+                }ms quando ocorreu o erro.`
+            );
+
+            if (error.code === 10062) {
+
+                console.error(
+                    "❌ Interação expirada ou respondida por outra instância."
+                );
+
+                return;
+
+            }
+
             if (
                 !interaction.replied &&
                 !interaction.deferred
@@ -359,7 +392,14 @@ client.on(
 
                     flags: 64
 
-                }).catch(() => {});
+                }).catch(replyError => {
+
+                    console.error(
+                        "Não foi possível enviar a mensagem de erro:",
+                        replyError.message
+                    );
+
+                });
 
             }
 
