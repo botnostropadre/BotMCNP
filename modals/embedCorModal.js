@@ -5,40 +5,33 @@ const {
     ActionRowBuilder
 } = require("discord.js");
 
+// ======================================================
+// MODAL - COR
+// ======================================================
+
 function criarModalCor() {
 
-    const modal = new ModalBuilder()
-
-        .setCustomId("embed_modal_cor")
-
-        .setTitle("Cor do Embed");
-
     const cor = new TextInputBuilder()
-
         .setCustomId("cor")
-
-        .setLabel("Cor em HEX")
-
-        .setPlaceholder("#2ECC71")
-
+        .setLabel("Cor do Embed (HEX)")
+        .setPlaceholder("#57F287 ou 57F287")
         .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(7);
 
-        .setRequired(true);
-
-    modal.addComponents(
-
-        new ActionRowBuilder()
-
-            .addComponents(cor)
-
-    );
-
-    return modal;
+    return new ModalBuilder()
+        .setCustomId("embed_modal_cor")
+        .setTitle("Editar Cor")
+        .addComponents(
+            new ActionRowBuilder().addComponents(cor)
+        );
 
 }
 
+// ======================================================
+// EXPORTAÇÕES
+// ======================================================
+
 module.exports = {
-
     criarModalCor
-
 };

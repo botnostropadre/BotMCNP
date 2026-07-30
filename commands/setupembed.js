@@ -15,7 +15,7 @@ module.exports = {
 
         .setName("setupembed")
 
-        .setDescription("Abre o editor de embeds")
+        .setDescription("Cria o painel fixo do editor de embeds.")
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
@@ -23,37 +23,101 @@ module.exports = {
 
     async execute(interaction) {
 
-        const embed = new EmbedBuilder()
+        try {
 
-            .setColor(COLORS.VERDE)
+            const embed = new EmbedBuilder()
 
-            .setTitle("📝 Editor de Embeds")
+                .setColor(COLORS.VERDE)
 
-            .setDescription(`Clique no botão abaixo para iniciar o editor.`);
+                .setTitle("📝 Editor de Embeds")
 
-        const row = new ActionRowBuilder()
+                .setDescription(
+`Utilize este painel para criar e publicar embeds personalizados.
 
-            .addComponents(
+Você poderá configurar:
 
-                new ButtonBuilder()
+**Título**
+**Descrição**
+**Rodapé**
+**Faixa inferior**
+**Canal de publicação**
 
-                    .setCustomId("embed_novo")
+As formatações do Discord podem ser utilizadas normalmente nos textos.`
+                )
 
-                    .setLabel("➕ Novo Embed")
+                .setFooter({
+                    text: "Padre Nosso MC"
+                });
 
-                    .setStyle(ButtonStyle.Success)
+            const row = new ActionRowBuilder()
 
+                .addComponents(
+
+                    new ButtonBuilder()
+
+                        .setCustomId("embed_novo")
+
+                        .setLabel("Novo Embed")
+
+                        .setEmoji("➕")
+
+                        .setStyle(ButtonStyle.Success)
+
+                );
+
+            await interaction.channel.send({
+
+                embeds: [embed],
+
+                components: [row]
+
+            });
+
+            await interaction.reply({
+
+                content: "✅ Painel do editor de embeds criado.",
+
+                flags: 64
+
+            });
+
+            setTimeout(async () => {
+
+                try {
+
+                    await interaction.deleteReply();
+
+                } catch (error) {
+
+                    console.error(
+                        "Erro ao apagar confirmação do painel de embeds:",
+                        error.message
+                    );
+
+                }
+
+            }, 5000);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao criar painel de embeds:",
+                error
             );
 
-        await interaction.reply({
+            if (!interaction.replied) {
 
-            embeds: [embed],
+                await interaction.reply({
 
-            components: [row],
+                    content: "❌ Não foi possível criar o painel de embeds.",
 
-            flags: 64
+                    flags: 64
 
-        });
+                });
+
+            }
+
+        }
 
     }
 

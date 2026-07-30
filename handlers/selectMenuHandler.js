@@ -5,24 +5,65 @@ const {
     ActionRowBuilder
 } = require("discord.js");
 
-const { criarModalCor } = require("../modals/embedCorModal");
-const { criarModalImagem } = require("../modals/embedImagemModal");
-const { criarModalAutor } = require("../modals/embedAutorModal");
-const { criarModalRodape } = require("../modals/embedRodapeModal");
+const {
+    criarModalCor
+} = require("../modals/embedCorModal");
+
+const {
+    criarModalImagem
+} = require("../modals/embedImagemModal");
+
+const {
+    criarModalRodape
+} = require("../modals/embedRodapeModal");
 
 const {
     atualizarEditor
 } = require("../services/embedBuilderService");
 
+// ======================================================
+// APAGAR RESPOSTA TEMPORÁRIA
+// ======================================================
+
+function apagarResposta(interaction, tempo = 10000) {
+
+    setTimeout(async () => {
+
+        try {
+
+            await interaction.deleteReply();
+
+        } catch {}
+
+    }, tempo);
+
+}
+
+// ======================================================
+// HANDLER DE MENUS DE SELEÇÃO
+// ======================================================
+
 async function handleSelectMenu(interaction) {
 
-    if (!interaction.isStringSelectMenu()) return;
+    if (
+        !interaction.isStringSelectMenu() &&
+        !interaction.isChannelSelectMenu()
+    ) {
 
-    // ==========================
+        return;
+
+    }
+
+    // ==================================================
     // CATEGORIA FINANCEIRA
-    // ==========================
+    // ==================================================
 
-    if (interaction.customId.startsWith("categoria_financeira_")) {
+    if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId.startsWith(
+            "categoria_financeira_"
+        )
+    ) {
 
         const tipo = interaction.customId.replace(
             "categoria_financeira_",
@@ -33,7 +74,9 @@ async function handleSelectMenu(interaction) {
 
         const modal = new ModalBuilder()
 
-            .setCustomId(`financeiro_${tipo}_${categoria}`)
+            .setCustomId(
+                `financeiro_${tipo}_${categoria}`
+            )
 
             .setTitle(
                 tipo === "entrada"
@@ -46,6 +89,8 @@ async function handleSelectMenu(interaction) {
             .setCustomId("valor")
 
             .setLabel("Valor")
+
+            .setPlaceholder("Ex.: 1500,00")
 
             .setStyle(TextInputStyle.Short)
 
@@ -63,9 +108,11 @@ async function handleSelectMenu(interaction) {
 
         modal.addComponents(
 
-            new ActionRowBuilder().addComponents(valor),
+            new ActionRowBuilder()
+                .addComponents(valor),
 
-            new ActionRowBuilder().addComponents(descricao)
+            new ActionRowBuilder()
+                .addComponents(descricao)
 
         );
 
@@ -73,122 +120,89 @@ async function handleSelectMenu(interaction) {
 
     }
 
-    // ==========================
-    // MENU VISUAL
-    // ==========================
+    // ==================================================
+    // MENU VISUAL DO EMBED
+    // ==================================================
 
-    if (interaction.customId === "embed_visual_menu") {
-
-        const opcao = interaction.values[0];
-
-        switch (opcao) {
-
-            case "cor":
-                return interaction.showModal(
-                    criarModalCor()
-                );
-
-            case "autor":
-                return interaction.showModal(
-                    criarModalAutor()
-                );
-
-            case "rodape":
-                return interaction.showModal(
-                    criarModalRodape()
-                );
-
-            case "timestamp":
-
-                await interaction.reply({
-
-                    content: "🚧 Editor de Timestamp em desenvolvimento.",
-
-                    flags: 64
-
-                });
-
-                setTimeout(async () => {
-
-                    try {
-
-                        await interaction.deleteReply();
-
-                    } catch {}
-
-                }, 10000);
-
-                return;
-
-        }
-
-    }
-
-    // ==========================
-    // MENU IMAGENS
-    // ==========================
-
-    if (interaction.customId === "embed_imagem_menu") {
+    if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId ===
+        "embed_visual_menu"
+    ) {
 
         const opcao = interaction.values[0];
 
-        switch (opcao) {
+        if (opcao === "cor") {
 
-            case "thumbnail":
-
-                return interaction.showModal(
-
-                    criarModalImagem("thumbnail")
-
-                );
-
-            case "imagem":
-
-                return interaction.showModal(
-
-                    criarModalImagem("imagem")
-
-                );
+            return interaction.showModal(
+                criarModalCor()
+            );
 
         }
 
+        if (opcao === "rodape") {
+
+            return interaction.showModal(
+                criarModalRodape()
+            );
+
+        }
+
+        return;
+
     }
 
-    // ==========================
-    // SELEÇÃO DE CANAL
-    // ==========================
+    // ==================================================
+    // MENU DE IMAGEM DO EMBED
+    // ==================================================
 
-    if (interaction.customId === "embed_canal_menu") {
+    if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId ===
+        "embed_imagem_menu"
+    ) {
+
+        const opcao = interaction.values[0];
+
+        if (opcao === "faixa") {
+
+            return interaction.showModal(
+                criarModalImagem()
+            );
+
+        }
+
+        return;
+
+    }
+
+    // ==================================================
+    // SELEÇÃO DO CANAL DE PUBLICAÇÃO
+    // ==================================================
+
+    if (
+        interaction.isChannelSelectMenu() &&
+        interaction.customId ===
+        "embed_canal_menu"
+    ) {
 
         atualizarEditor(
-
             interaction.user.id,
-
             {
-
                 canal: interaction.values[0]
-
             }
-
         );
 
         await interaction.reply({
 
-            content: "✅ Canal salvo com sucesso.",
+            content:
+                "✅ Canal salvo com sucesso.",
 
             flags: 64
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 

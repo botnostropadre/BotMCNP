@@ -5,40 +5,33 @@ const {
     ActionRowBuilder
 } = require("discord.js");
 
+// ======================================================
+// MODAL - TÍTULO
+// ======================================================
+
 function criarModalTitulo() {
 
-    const modal = new ModalBuilder()
-
-        .setCustomId("embed_modal_titulo")
-
-        .setTitle("Editar Título");
-
     const titulo = new TextInputBuilder()
-
         .setCustomId("titulo")
-
         .setLabel("Título do Embed")
-
-        .setPlaceholder("Ex: Recrutamento Padre Nostro MC")
-
+        .setPlaceholder("Ex.: Recrutamento Padre Nosso MC")
         .setStyle(TextInputStyle.Short)
-
         .setRequired(true)
-
         .setMaxLength(256);
 
-    modal.addComponents(
-
-        new ActionRowBuilder().addComponents(titulo)
-
-    );
-
-    return modal;
+    return new ModalBuilder()
+        .setCustomId("embed_modal_titulo")
+        .setTitle("Editar Título")
+        .addComponents(
+            new ActionRowBuilder().addComponents(titulo)
+        );
 
 }
 
+// ======================================================
+// EXPORTAÇÕES
+// ======================================================
+
 module.exports = {
-
     criarModalTitulo
-
 };

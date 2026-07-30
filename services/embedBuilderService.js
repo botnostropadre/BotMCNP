@@ -1,14 +1,22 @@
 const COLORS = require("../config/colors");
 
-const embeds = new Map();
+// ======================================================
+// EDITORES ATIVOS
+// ======================================================
 
-const TEMPO_EXPIRACAO = 30 * 60 * 1000; // 30 minutos
+const editores = new Map();
+
+const TEMPO_EXPIRACAO = 30 * 60 * 1000;
+
+// ======================================================
+// CRIAR EDITOR
+// ======================================================
 
 function criarEditor(userId) {
 
-    embeds.set(userId, {
+    const agora = Date.now();
 
-        nome: "",
+    const editor = {
 
         titulo: "",
 
@@ -16,70 +24,80 @@ function criarEditor(userId) {
 
         cor: COLORS.VERDE,
 
-        autor: {
-            nome: "",
-            icone: ""
-        },
+        rodape: "",
 
-        rodape: {
-            texto: "",
-            icone: ""
-        },
-
-        thumbnail: "",
-
-        imagem: "",
+        faixa: "",
 
         canal: null,
 
-        timestamp: false,
-
         campos: [],
 
-        criadoEm: Date.now(),
+        criadoEm: agora,
 
-        atualizadoEm: Date.now()
+        atualizadoEm: agora
 
-    });
+    };
+
+    editores.set(userId, editor);
 
     setTimeout(() => {
 
-        const editor = embeds.get(userId);
+        const editorAtual = editores.get(userId);
 
-        if (!editor) return;
+        if (!editorAtual) return;
 
-        const expirado =
-            Date.now() - editor.criadoEm >= TEMPO_EXPIRACAO;
+        const tempoSemAtualizacao =
+            Date.now() - editorAtual.atualizadoEm;
 
-        if (expirado) {
+        if (tempoSemAtualizacao >= TEMPO_EXPIRACAO) {
 
-            embeds.delete(userId);
+            editores.delete(userId);
 
         }
 
     }, TEMPO_EXPIRACAO);
 
+    return editor;
+
 }
+
+// ======================================================
+// OBTER EDITOR
+// ======================================================
 
 function obterEditor(userId) {
 
-    return embeds.get(userId);
+    return editores.get(userId) || null;
 
 }
 
-function atualizarEditor(userId, dados) {
+// ======================================================
+// GARANTIR EDITOR ATIVO
+// ======================================================
 
-    let editor = embeds.get(userId);
+function garantirEditor(userId) {
+
+    let editor = obterEditor(userId);
 
     if (!editor) {
 
-        criarEditor(userId);
-
-        editor = embeds.get(userId);
+        editor = criarEditor(userId);
 
     }
 
-    embeds.set(userId, {
+    return editor;
+
+}
+
+// ======================================================
+// ATUALIZAR EDITOR
+// ======================================================
+
+function atualizarEditor(userId, dados = {}) {
+
+    const editor = garantirEditor(userId);
+
+    const editorAtualizado = {
 
         ...editor,
 
@@ -87,101 +105,207 @@ function atualizarEditor(userId, dados) {
 
         atualizadoEm: Date.now()
 
-    });
+    };
+
+    editores.set(userId, editorAtualizado);
+
+    return editorAtualizado;
 
 }
 
+// ======================================================
+// ADICIONAR CAMPO
+// ======================================================
+
 function adicionarCampo(userId, campo) {
 
-    const editor = embeds.get(userId);
-
-    if (!editor) return;
+    const editor = garantirEditor(userId);
 
     if (editor.campos.length >= 25) {
 
-        throw new Error("Um embed pode possuir no máximo 25 campos.");
+        throw new Error(
+            "Um embed pode possuir no máximo 25 campos."
+        );
+
+    }
+
+    const nome = campo.name?.trim();
+
+    const valor = campo.value?.trim();
+
+    if (!nome) {
+
+        throw new Error(
+            "Informe o título do campo."
+        );
+
+    }
+
+    if (!valor) {
+
+        throw new Error(
+            "Informe o conteúdo do campo."
+        );
 
     }
 
     editor.campos.push({
 
-        name: campo.name,
+        name: nome,
 
-        value: campo.value,
+        value: valor,
 
-        inline: campo.inline ?? false
+        inline: Boolean(campo.inline)
 
     });
 
     editor.atualizadoEm = Date.now();
 
+    editores.set(userId, editor);
+
+    return editor;
+
 }
+
+// ======================================================
+// EDITAR CAMPO
+// ======================================================
 
 function editarCampo(userId, indice, campo) {
 
-    const editor = embeds.get(userId);
+    const editor = obterEditor(userId);
 
-    if (!editor) return;
+    if (!editor) {
 
-    if (!editor.campos[indice]) return;
+        throw new Error(
+            "Nenhum editor ativo encontrado."
+        );
+
+    }
+
+    if (!editor.campos[indice]) {
+
+        throw new Error(
+            "O campo informado não existe."
+        );
+
+    }
+
+    const nome = campo.name?.trim();
+
+    const valor = campo.value?.trim();
+
+    if (!nome || !valor) {
+
+        throw new Error(
+            "O título e o conteúdo do campo são obrigatórios."
+        );
+
+    }
 
     editor.campos[indice] = {
 
-        name: campo.name,
+        name: nome,
 
-        value: campo.value,
+        value: valor,
 
-        inline: campo.inline ?? false
+        inline: Boolean(campo.inline)
 
     };
 
     editor.atualizadoEm = Date.now();
 
+    editores.set(userId, editor);
+
+    return editor;
+
 }
+
+// ======================================================
+// REMOVER CAMPO
+// ======================================================
 
 function removerCampo(userId, indice) {
 
-    const editor = embeds.get(userId);
+    const editor = obterEditor(userId);
 
-    if (!editor) return;
+    if (!editor) {
 
-    if (!editor.campos[indice]) return;
+        throw new Error(
+            "Nenhum editor ativo encontrado."
+        );
+
+    }
+
+    if (!editor.campos[indice]) {
+
+        throw new Error(
+            "O campo informado não existe."
+        );
+
+    }
 
     editor.campos.splice(indice, 1);
 
     editor.atualizadoEm = Date.now();
 
+    editores.set(userId, editor);
+
+    return editor;
+
 }
+
+// ======================================================
+// LIMPAR CAMPOS
+// ======================================================
 
 function limparCampos(userId) {
 
-    const editor = embeds.get(userId);
+    const editor = obterEditor(userId);
 
-    if (!editor) return;
+    if (!editor) return null;
 
     editor.campos = [];
 
     editor.atualizadoEm = Date.now();
 
+    editores.set(userId, editor);
+
+    return editor;
+
 }
+
+// ======================================================
+// RESETAR EDITOR
+// ======================================================
 
 function resetarEditor(userId) {
 
-    criarEditor(userId);
+    return criarEditor(userId);
 
 }
+
+// ======================================================
+// REMOVER EDITOR
+// ======================================================
 
 function removerEditor(userId) {
 
-    embeds.delete(userId);
+    return editores.delete(userId);
 
 }
+
+// ======================================================
+// EXPORTAÇÕES
+// ======================================================
 
 module.exports = {
 
     criarEditor,
 
     obterEditor,
+
+    garantirEditor,
 
     atualizarEditor,
 

@@ -5,50 +5,33 @@ const {
     ActionRowBuilder
 } = require("discord.js");
 
+// ======================================================
+// MODAL - RODAPÉ
+// ======================================================
+
 function criarModalRodape() {
 
-    const modal = new ModalBuilder()
-
-        .setCustomId("embed_modal_rodape")
-
-        .setTitle("Rodapé do Embed");
-
     const texto = new TextInputBuilder()
-
         .setCustomId("texto")
-
         .setLabel("Texto do Rodapé")
-
+        .setPlaceholder("Ex.: Padre Nosso MC")
         .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(2048);
 
-        .setRequired(true);
-
-    const icone = new TextInputBuilder()
-
-        .setCustomId("icone")
-
-        .setLabel("URL do Ícone (opcional)")
-
-        .setPlaceholder("https://...")
-
-        .setStyle(TextInputStyle.Short)
-
-        .setRequired(false);
-
-    modal.addComponents(
-
-        new ActionRowBuilder().addComponents(texto),
-
-        new ActionRowBuilder().addComponents(icone)
-
-    );
-
-    return modal;
+    return new ModalBuilder()
+        .setCustomId("embed_modal_rodape")
+        .setTitle("Editar Rodapé")
+        .addComponents(
+            new ActionRowBuilder().addComponents(texto)
+        );
 
 }
 
+// ======================================================
+// EXPORTAÇÕES
+// ======================================================
+
 module.exports = {
-
     criarModalRodape
-
 };

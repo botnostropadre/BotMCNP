@@ -9,7 +9,7 @@ function criarVisualMenu() {
 
         .setCustomId("embed_visual_menu")
 
-        .setPlaceholder("Escolha uma opção")
+        .setPlaceholder("Selecione o que deseja editar")
 
         .addOptions(
 
@@ -17,7 +17,7 @@ function criarVisualMenu() {
 
                 label: "Cor do Embed",
 
-                description: "Alterar a cor",
+                description: "Alterar a cor da lateral",
 
                 emoji: "🎨",
 
@@ -27,37 +27,13 @@ function criarVisualMenu() {
 
             {
 
-                label: "Autor",
-
-                description: "Editar autor",
-
-                emoji: "👤",
-
-                value: "autor"
-
-            },
-
-            {
-
                 label: "Rodapé",
 
-                description: "Editar rodapé",
+                description: "Editar o texto do rodapé",
 
-                emoji: "👣",
+                emoji: "📝",
 
                 value: "rodape"
-
-            },
-
-            {
-
-                label: "Timestamp",
-
-                description: "Ativar ou remover",
-
-                emoji: "📅",
-
-                value: "timestamp"
 
             }
 

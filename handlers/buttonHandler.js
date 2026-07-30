@@ -4,36 +4,88 @@ const {
 
 const COLORS = require("../config/colors");
 
-const { criarCategoriaFinanceira } = require("../selectMenus/categoriaFinanceira");
-const { criarModalRegistro } = require("../modals/registroModal");
-const { criarEditorButtons } = require("../buttons/embedEditorButtons");
-const { criarModalTitulo } = require("../modals/embedTituloModal");
-const { criarModalDescricao } = require("../modals/embedDescricaoModal");
-const { criarVisualMenu } = require("../selectMenus/embedVisualMenu");
-const { criarImagemMenu } = require("../selectMenus/embedImagemMenu");
-const { criarModalCampo } = require("../modals/embedCampoModal");
+const {
+    criarCategoriaFinanceira
+} = require("../selectMenus/categoriaFinanceira");
 
 const {
-    criarEditor
+    criarModalRegistro
+} = require("../modals/registroModal");
+
+const {
+    criarEditorButtons
+} = require("../buttons/embedEditorButtons");
+
+const {
+    criarModalTitulo
+} = require("../modals/embedTituloModal");
+
+const {
+    criarModalDescricao
+} = require("../modals/embedDescricaoModal");
+
+const {
+    criarVisualMenu
+} = require("../selectMenus/embedVisualMenu");
+
+const {
+    criarImagemMenu
+} = require("../selectMenus/embedImagemMenu");
+
+const {
+    criarModalCampo
+} = require("../modals/embedCampoModal");
+
+const {
+    criarEditor,
+    removerEditor
 } = require("../services/embedBuilderService");
 
 const {
-    gerarPreview
+    gerarPreviewCompleto
 } = require("../services/embedPreviewService");
+
+const {
+    gerarStatusEditor
+} = require("../services/embedStatusService");
+
 const {
     criarCanalMenu
 } = require("../selectMenus/embedCanalMenu");
+
 const {
     publicarEmbed
 } = require("../services/publicarEmbedService");
+
+// ======================================================
+// APAGAR RESPOSTA TEMPORÁRIA
+// ======================================================
+
+function apagarResposta(interaction, tempo = 10000) {
+
+    setTimeout(async () => {
+
+        try {
+
+            await interaction.deleteReply();
+
+        } catch {}
+
+    }, tempo);
+
+}
+
+// ======================================================
+// HANDLER DE BOTÕES
+// ======================================================
 
 async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
 
-    // ==========================
+    // ==================================================
     // REGISTRO
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "registro") {
 
@@ -43,9 +95,9 @@ async function handleButton(interaction) {
 
     }
 
-    // ==========================
+    // ==================================================
     // ENTRADA FINANCEIRA
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "financeiro_entrada") {
 
@@ -69,23 +121,15 @@ async function handleButton(interaction) {
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 
     }
 
-    // ==========================
+    // ==================================================
     // SAÍDA FINANCEIRA
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "financeiro_saida") {
 
@@ -109,67 +153,59 @@ async function handleButton(interaction) {
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 
     }
 
-    // ==========================
-    // EDITOR DE EMBEDS
-    // ==========================
+    // ==================================================
+    // INICIAR EDITOR DE EMBEDS
+    // ==================================================
 
     if (interaction.customId === "embed_novo") {
 
         criarEditor(interaction.user.id);
 
-        const embed = new EmbedBuilder()
+        const embed = gerarStatusEditor(
+            interaction.user.id,
+            interaction.guild
+        );
 
-            .setColor("#2ECC71")
+        if (!embed) {
 
-            .setTitle("📝 Editor de Embeds")
+            await interaction.reply({
 
-            .setDescription(`### Bem-vindo ao Editor.
+                content:
+                    "❌ Não foi possível iniciar o editor de embeds.",
 
-Escolha uma das opções abaixo para começar.
+                flags: 64
 
-📝 Título
+            });
 
-📄 Descrição
+            apagarResposta(interaction);
 
-🎨 Visual
+            return;
 
-🖼 Imagens
+        }
 
-📢 Canal de destino
-
-➕ Campo
-
-👁 Preview
-
-✅ Publicar`);
-
-        return interaction.update({
+        await interaction.reply({
 
             embeds: [embed],
 
-            components: criarEditorButtons()
+            components: criarEditorButtons(),
+
+            flags: 64
 
         });
 
+        return;
+
     }
 
-    // ==========================
+    // ==================================================
     // EDITAR TÍTULO
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "embed_titulo") {
 
@@ -179,9 +215,9 @@ Escolha uma das opções abaixo para começar.
 
     }
 
-    // ==========================
+    // ==================================================
     // EDITAR DESCRIÇÃO
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "embed_descricao") {
 
@@ -191,15 +227,15 @@ Escolha uma das opções abaixo para começar.
 
     }
 
-    // ==========================
-    // VISUAL
-    // ==========================
+    // ==================================================
+    // EDITAR VISUAL
+    // ==================================================
 
     if (interaction.customId === "embed_visual") {
 
         const embed = new EmbedBuilder()
 
-            .setColor("#2ECC71")
+            .setColor(COLORS.VERDE)
 
             .setTitle("🎨 Visual do Embed")
 
@@ -217,34 +253,26 @@ Escolha uma das opções abaixo para começar.
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 
     }
 
-    // ==========================
-    // IMAGENS
-    // ==========================
+    // ==================================================
+    // CONFIGURAR IMAGENS
+    // ==================================================
 
     if (interaction.customId === "embed_imagens") {
 
         const embed = new EmbedBuilder()
 
-            .setColor("#2ECC71")
+            .setColor(COLORS.VERDE)
 
-            .setTitle("🖼 Imagens")
+            .setTitle("🖼 Imagens do Embed")
 
             .setDescription(
-                "Escolha qual imagem deseja configurar."
+                "Escolha abaixo qual imagem deseja configurar."
             );
 
         await interaction.reply({
@@ -257,63 +285,47 @@ Escolha uma das opções abaixo para começar.
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 
     }
-// ==========================
-// CANAL
-// ==========================
 
-if (interaction.customId === "embed_canal") {
+    // ==================================================
+    // ESCOLHER CANAL
+    // ==================================================
 
-    const embed = new EmbedBuilder()
+    if (interaction.customId === "embed_canal") {
 
-        .setColor(COLORS.VERDE)
+        const embed = new EmbedBuilder()
 
-        .setTitle("📢 Canal de Publicação")
+            .setColor(COLORS.VERDE)
 
-        .setDescription(
+            .setTitle("📢 Canal de Publicação")
 
-            "Escolha o canal onde o embed será publicado."
+            .setDescription(
+                "Escolha o canal onde o embed será publicado."
+            );
 
-        );
+        await interaction.reply({
 
-    await interaction.reply({
+            embeds: [embed],
 
-        embeds: [embed],
+            components: criarCanalMenu(),
 
-        components: criarCanalMenu(),
+            flags: 64
 
-        flags: 64
+        });
 
-    });
+        apagarResposta(interaction);
 
-    setTimeout(async () => {
+        return;
 
-        try {
+    }
 
-            await interaction.deleteReply();
-
-        } catch {}
-
-    }, 10000);
-
-    return;
-
-}
-    // ==========================
+    // ==================================================
     // ADICIONAR CAMPO
-    // ==========================
+    // ==================================================
 
     if (interaction.customId === "embed_campo") {
 
@@ -323,119 +335,131 @@ if (interaction.customId === "embed_canal") {
 
     }
 
-    // ==========================
-    // PREVIEW
-    // ==========================
+   // ==================================================
+// VISUALIZAR PRÉVIA
+// ==================================================
 
-    if (interaction.customId === "embed_preview") {
+if (interaction.customId === "embed_preview") {
 
-        const preview = gerarPreview(
-            interaction.user.id
+    const previewCompleto =
+        gerarPreviewCompleto(
+            interaction.user.id,
+            interaction.guild
         );
 
-        if (!preview) {
-
-            await interaction.reply({
-
-                content: "❌ Nenhum editor encontrado.",
-
-                flags: 64
-
-            });
-
-            setTimeout(async () => {
-
-                try {
-
-                    await interaction.deleteReply();
-
-                } catch {}
-
-            }, 10000);
-
-            return;
-
-        }
+    if (!previewCompleto) {
 
         await interaction.reply({
 
-            embeds: [preview],
+            content:
+                "❌ Nenhum editor de embed foi encontrado.",
 
             flags: 64
 
         });
 
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
+        apagarResposta(interaction);
 
         return;
 
     }
 
+    await interaction.reply({
 
-// ==========================
-// PUBLICAR
-// ==========================
+        embeds: previewCompleto,
 
-if (interaction.customId === "embed_publicar") {
+        flags: 64
 
-    try {
+    });
 
-        await publicarEmbed(
+    apagarResposta(interaction);
 
-            interaction.client,
+    return;
 
-            interaction.user.id
+}
 
-        );
+    // ==================================================
+    // PUBLICAR EMBED
+    // ==================================================
 
-        await interaction.reply({
-
-            content: "✅ Embed publicado com sucesso.",
-
-            flags: 64
-
-        });
-
-
-    } catch (err) {
-
-
-        await interaction.reply({
-
-            content: `❌ ${err.message}`,
-
-            flags: 64
-
-        });
-
-    }
-
-
-    setTimeout(async () => {
+    if (interaction.customId === "embed_publicar") {
 
         try {
 
-            await interaction.deleteReply();
+            await publicarEmbed(
+                interaction.client,
+                interaction.user.id
+            );
 
-        } catch {}
+            await interaction.reply({
 
-    }, 10000);
+                content:
+                    "✅ Embed publicado com sucesso.",
 
+                flags: 64
 
-    return;
+            });
+
+        } catch (error) {
+
+            await interaction.reply({
+
+                content:
+                    `❌ ${error.message}`,
+
+                flags: 64
+
+            });
+
+        }
+
+        apagarResposta(interaction);
+
+        return;
+
+    }
+
+    // ==================================================
+    // CANCELAR EDITOR
+    // ==================================================
+
+    if (interaction.customId === "embed_cancelar") {
+
+        removerEditor(interaction.user.id);
+
+        const embed = new EmbedBuilder()
+
+            .setColor(COLORS.VERMELHO)
+
+            .setTitle("❌ Editor cancelado")
+
+            .setDescription(
+                "Toda a edição do embed foi descartada."
+            )
+
+            .setFooter({
+
+                text: "Padre Nosso MC"
+
+            })
+
+            .setTimestamp();
+
+        await interaction.update({
+
+            embeds: [embed],
+
+            components: []
+
+        });
+
+        apagarResposta(interaction);
+
+        return;
 
     }
 
 }
-
 
 module.exports = {
 

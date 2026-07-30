@@ -5,48 +5,33 @@ const {
     ActionRowBuilder
 } = require("discord.js");
 
-function criarModalImagem(tipo) {
+// ======================================================
+// MODAL - FAIXA
+// ======================================================
 
-    const modal = new ModalBuilder()
-
-        .setCustomId(`embed_modal_${tipo}`)
-
-        .setTitle(
-
-            tipo === "thumbnail"
-
-                ? "Thumbnail"
-
-                : "Imagem Principal"
-
-        );
+function criarModalImagem() {
 
     const url = new TextInputBuilder()
-
         .setCustomId("url")
-
-        .setLabel("URL da imagem")
-
-        .setPlaceholder("https://...")
-
+        .setLabel("URL da Faixa")
+        .setPlaceholder("https://exemplo.com/imagem.png")
         .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(1024);
 
-        .setRequired(true);
-
-    modal.addComponents(
-
-        new ActionRowBuilder()
-
-            .addComponents(url)
-
-    );
-
-    return modal;
+    return new ModalBuilder()
+        .setCustomId("embed_modal_faixa")
+        .setTitle("Editar Faixa")
+        .addComponents(
+            new ActionRowBuilder().addComponents(url)
+        );
 
 }
 
+// ======================================================
+// EXPORTAÇÕES
+// ======================================================
+
 module.exports = {
-
     criarModalImagem
-
 };

@@ -9,18 +9,18 @@ function criarImagemMenu() {
 
         .setCustomId("embed_imagem_menu")
 
-        .setPlaceholder("Escolha o que deseja editar")
+        .setPlaceholder("Selecione a imagem do embed")
 
         .addOptions(
 
             {
-                label: "🖼 Thumbnail",
-                value: "thumbnail"
-            },
 
-            {
-                label: "🌄 Imagem Principal",
-                value: "imagem"
+                label: "🖼 Faixa Inferior",
+
+                description: "Imagem exibida na parte inferior do embed",
+
+                value: "faixa"
+
             }
 
         );

@@ -34,11 +34,11 @@ function criarEditorButtons() {
 
                 new ButtonBuilder()
 
-                    .setCustomId("embed_visual")
+                    .setCustomId("embed_canal")
 
-                    .setLabel("🎨 Visual")
+                    .setLabel("📢 Canal")
 
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Success)
 
             ),
 
@@ -52,19 +52,19 @@ function criarEditorButtons() {
 
                 new ButtonBuilder()
 
-                    .setCustomId("embed_imagens")
+                    .setCustomId("embed_visual")
 
-                    .setLabel("🖼 Imagens")
+                    .setLabel("🎨 Cor")
 
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
 
-                    .setCustomId("embed_canal")
+                    .setCustomId("embed_imagens")
 
-                    .setLabel("📢 Canal")
+                    .setLabel("🖼 Faixa")
 
-                    .setStyle(ButtonStyle.Success),
+                    .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
 

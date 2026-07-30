@@ -1,4 +1,5 @@
 const { registrar } = require("../services/registroService");
+
 const COLORS = require("../config/colors");
 const settings = require("../config/settings.json");
 
@@ -16,6 +17,14 @@ const {
     adicionarCampo
 } = require("../services/embedBuilderService");
 
+const {
+    gerarStatusEditor
+} = require("../services/embedStatusService");
+
+const {
+    criarEditorButtons
+} = require("../buttons/embedEditorButtons");
+
 // ======================================================
 // APAGAR RESPOSTA APÓS 10 SEGUNDOS
 // ======================================================
@@ -25,12 +34,96 @@ function apagarResposta(interaction) {
     setTimeout(async () => {
 
         try {
+
             await interaction.deleteReply();
+
         } catch {
+
             // A resposta pode já ter sido apagada.
+
         }
 
     }, 10000);
+
+}
+
+// ======================================================
+// APAGAR MENSAGEM TEMPORÁRIA
+// ======================================================
+
+function apagarMensagem(mensagem, tempo = 10000) {
+
+    setTimeout(async () => {
+
+        try {
+
+            await mensagem.delete();
+
+        } catch {
+
+            // A mensagem pode já ter sido apagada.
+
+        }
+
+    }, tempo);
+
+}
+
+// ======================================================
+// ATUALIZAR PAINEL DO EDITOR
+// ======================================================
+
+async function atualizarPainelEditor(
+    interaction,
+    mensagemSucesso
+) {
+
+    const painel = gerarStatusEditor(
+        interaction.user.id,
+        interaction.guild
+    );
+
+    if (!painel) {
+
+        await interaction.reply({
+            content:
+                "❌ Nenhum editor de embed foi encontrado.",
+            flags: 64
+        });
+
+        apagarResposta(interaction);
+
+        return;
+
+    }
+
+    /*
+     * Quando o modal foi aberto por um botão ou menu,
+     * interaction.message representa o painel original.
+     */
+    if (interaction.message) {
+
+        await interaction.update({
+            embeds: [painel],
+            components: criarEditorButtons()
+        });
+
+    } else {
+
+        await interaction.reply({
+            embeds: [painel],
+            components: criarEditorButtons(),
+            flags: 64
+        });
+
+    }
+
+    const confirmacao = await interaction.followUp({
+        content: mensagemSucesso,
+        flags: 64
+    });
+
+    apagarMensagem(confirmacao);
 
 }
 
@@ -47,8 +140,12 @@ async function handleModal(interaction) {
     // ==================================================
 
     if (
-        interaction.customId.startsWith("financeiro_entrada_") ||
-        interaction.customId.startsWith("financeiro_saida_")
+        interaction.customId.startsWith(
+            "financeiro_entrada_"
+        ) ||
+        interaction.customId.startsWith(
+            "financeiro_saida_"
+        )
     ) {
 
         const tipo = interaction.customId.startsWith(
@@ -63,7 +160,9 @@ async function handleModal(interaction) {
         );
 
         const valorTexto =
-            interaction.fields.getTextInputValue("valor");
+            interaction.fields.getTextInputValue(
+                "valor"
+            );
 
         const valor = Number(
             valorTexto
@@ -72,16 +171,23 @@ async function handleModal(interaction) {
         );
 
         const descricao =
-            interaction.fields.getTextInputValue("descricao");
+            interaction.fields.getTextInputValue(
+                "descricao"
+            );
 
-        if (!Number.isFinite(valor) || valor <= 0) {
+        if (
+            !Number.isFinite(valor) ||
+            valor <= 0
+        ) {
 
             await interaction.reply({
-                content: "❌ Informe um valor válido.",
+                content:
+                    "❌ Informe um valor válido.",
                 flags: 64
             });
 
             apagarResposta(interaction);
+
             return;
 
         }
@@ -117,7 +223,10 @@ async function handleModal(interaction) {
                     settings.canais.logs
                 );
 
-            if (canalLogs && canalLogs.isTextBased()) {
+            if (
+                canalLogs &&
+                canalLogs.isTextBased()
+            ) {
 
                 await canalLogs.send({
                     embeds: [
@@ -135,36 +244,47 @@ async function handleModal(interaction) {
                             fields: [
                                 {
                                     name: "💵 Valor",
-                                    value: valor.toLocaleString(
-                                        "pt-BR",
-                                        {
-                                            style: "currency",
-                                            currency: "BRL"
-                                        }
-                                    ),
+
+                                    value:
+                                        valor.toLocaleString(
+                                            "pt-BR",
+                                            {
+                                                style: "currency",
+                                                currency: "BRL"
+                                            }
+                                        ),
+
                                     inline: true
                                 },
                                 {
                                     name: "📂 Categoria",
+
                                     value: categoria,
+
                                     inline: true
                                 },
                                 {
                                     name: "📝 Descrição",
+
                                     value:
                                         descricao ||
                                         "Nenhuma descrição informada.",
+
                                     inline: false
                                 },
                                 {
                                     name: "👤 Responsável",
-                                    value: `${interaction.user}`,
+
+                                    value:
+                                        `${interaction.user}`,
+
                                     inline: false
                                 }
                             ],
 
                             footer: {
-                                text: "🇮🇹 Padre Nosso MC"
+                                text:
+                                    "🇮🇹 Padre Nosso MC"
                             },
 
                             timestamp:
@@ -177,12 +297,20 @@ async function handleModal(interaction) {
 
             await interaction.reply({
                 content:
-                    `✅ ${tipo === "entrada" ? "Entrada" : "Saída"} registrada com sucesso!\n\n` +
-                    `💰 Valor: **${valor.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL"
-                    })}**\n` +
+                    `✅ ${
+                        tipo === "entrada"
+                            ? "Entrada"
+                            : "Saída"
+                    } registrada com sucesso!\n\n` +
+                    `💰 Valor: **${valor.toLocaleString(
+                        "pt-BR",
+                        {
+                            style: "currency",
+                            currency: "BRL"
+                        }
+                    )}**\n` +
                     `📂 Categoria: **${categoria}**`,
+
                 flags: 64
             });
 
@@ -198,6 +326,7 @@ async function handleModal(interaction) {
             await interaction.reply({
                 content:
                     "❌ Ocorreu um erro ao registrar a movimentação financeira.",
+
                 flags: 64
             });
 
@@ -213,10 +342,15 @@ async function handleModal(interaction) {
     // EDITOR DE EMBEDS — TÍTULO
     // ==================================================
 
-    if (interaction.customId === "embed_modal_titulo") {
+    if (
+        interaction.customId ===
+        "embed_modal_titulo"
+    ) {
 
         const titulo =
-            interaction.fields.getTextInputValue("titulo");
+            interaction.fields.getTextInputValue(
+                "titulo"
+            );
 
         atualizarEditor(
             interaction.user.id,
@@ -225,12 +359,11 @@ async function handleModal(interaction) {
             }
         );
 
-        await interaction.reply({
-            content: "✅ Título salvo com sucesso.",
-            flags: 64
-        });
+        await atualizarPainelEditor(
+            interaction,
+            "✅ Título salvo com sucesso."
+        );
 
-        apagarResposta(interaction);
         return;
 
     }
@@ -239,10 +372,15 @@ async function handleModal(interaction) {
     // EDITOR DE EMBEDS — DESCRIÇÃO
     // ==================================================
 
-    if (interaction.customId === "embed_modal_descricao") {
+    if (
+        interaction.customId ===
+        "embed_modal_descricao"
+    ) {
 
         const descricao =
-            interaction.fields.getTextInputValue("descricao");
+            interaction.fields.getTextInputValue(
+                "descricao"
+            );
 
         atualizarEditor(
             interaction.user.id,
@@ -251,44 +389,115 @@ async function handleModal(interaction) {
             }
         );
 
-        await interaction.reply({
-            content: "✅ Descrição salva com sucesso.",
-            flags: 64
-        });
+        await atualizarPainelEditor(
+            interaction,
+            "✅ Descrição salva com sucesso."
+        );
 
-        apagarResposta(interaction);
         return;
 
     }
 
     // ==================================================
-    // EDITOR DE EMBEDS — AUTOR
+    // EDITOR DE EMBEDS — COR
     // ==================================================
 
-    if (interaction.customId === "embed_modal_autor") {
+    if (
+        interaction.customId ===
+        "embed_modal_cor"
+    ) {
 
-        const nome =
-            interaction.fields.getTextInputValue("nome");
+        let cor =
+            interaction.fields
+                .getTextInputValue("cor")
+                .trim();
 
-        const icone =
-            interaction.fields.getTextInputValue("icone");
+        if (!cor.startsWith("#")) {
+
+            cor = `#${cor}`;
+
+        }
+
+        const regex =
+            /^#[0-9A-Fa-f]{6}$/;
+
+        if (!regex.test(cor)) {
+
+            await interaction.reply({
+                content:
+                    "❌ Informe uma cor HEX válida.\n\n" +
+                    "Exemplo: **#57F287**",
+
+                flags: 64
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
 
         atualizarEditor(
             interaction.user.id,
             {
-                autor: {
-                    nome,
-                    icone
-                }
+                cor
             }
         );
 
-        await interaction.reply({
-            content: "✅ Autor atualizado.",
-            flags: 64
-        });
+        await atualizarPainelEditor(
+            interaction,
+            "✅ Cor atualizada com sucesso."
+        );
 
-        apagarResposta(interaction);
+        return;
+
+    }
+
+    // ==================================================
+    // EDITOR DE EMBEDS — FAIXA
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "embed_modal_faixa"
+    ) {
+
+        const url =
+            interaction.fields
+                .getTextInputValue("url")
+                .trim();
+
+        try {
+
+            new URL(url);
+
+        } catch {
+
+            await interaction.reply({
+                content:
+                    "❌ Informe uma URL válida para a faixa.",
+
+                flags: 64
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        atualizarEditor(
+            interaction.user.id,
+            {
+                faixa: url
+            }
+        );
+
+        await atualizarPainelEditor(
+            interaction,
+            "✅ Faixa atualizada com sucesso."
+        );
+
         return;
 
     }
@@ -297,30 +506,28 @@ async function handleModal(interaction) {
     // EDITOR DE EMBEDS — RODAPÉ
     // ==================================================
 
-    if (interaction.customId === "embed_modal_rodape") {
+    if (
+        interaction.customId ===
+        "embed_modal_rodape"
+    ) {
 
         const texto =
-            interaction.fields.getTextInputValue("texto");
-
-        const icone =
-            interaction.fields.getTextInputValue("icone");
+            interaction.fields
+                .getTextInputValue("texto")
+                .trim();
 
         atualizarEditor(
             interaction.user.id,
             {
-                rodape: {
-                    texto,
-                    icone
-                }
+                rodape: texto
             }
         );
 
-        await interaction.reply({
-            content: "✅ Rodapé atualizado.",
-            flags: 64
-        });
+        await atualizarPainelEditor(
+            interaction,
+            "✅ Rodapé atualizado com sucesso."
+        );
 
-        apagarResposta(interaction);
         return;
 
     }
@@ -329,13 +536,20 @@ async function handleModal(interaction) {
     // EDITOR DE EMBEDS — CAMPO
     // ==================================================
 
-    if (interaction.customId === "embed_modal_campo") {
+    if (
+        interaction.customId ===
+        "embed_modal_campo"
+    ) {
 
         const nome =
-            interaction.fields.getTextInputValue("nome");
+            interaction.fields.getTextInputValue(
+                "nome"
+            );
 
         const valor =
-            interaction.fields.getTextInputValue("valor");
+            interaction.fields.getTextInputValue(
+                "valor"
+            );
 
         const inlineTexto =
             interaction.fields
@@ -362,21 +576,24 @@ async function handleModal(interaction) {
                 }
             );
 
-            await interaction.reply({
-                content: "✅ Campo adicionado.",
-                flags: 64
-            });
+            await atualizarPainelEditor(
+                interaction,
+                "✅ Campo adicionado com sucesso."
+            );
 
         } catch (error) {
 
             await interaction.reply({
-                content: `❌ ${error.message}`,
+                content:
+                    `❌ ${error.message}`,
+
                 flags: 64
             });
 
+            apagarResposta(interaction);
+
         }
 
-        apagarResposta(interaction);
         return;
 
     }
@@ -385,19 +602,30 @@ async function handleModal(interaction) {
     // REGISTRO DE MEMBROS
     // ==================================================
 
-    if (interaction.customId === "registroModal") {
+    if (
+        interaction.customId ===
+        "registroModal"
+    ) {
 
         const nome =
-            interaction.fields.getTextInputValue("nome");
+            interaction.fields
+                .getTextInputValue("nome")
+                .trim();
 
         const vulgo =
-            interaction.fields.getTextInputValue("vulgo");
+            interaction.fields
+                .getTextInputValue("vulgo")
+                .trim();
 
         const sobrenome =
-            interaction.fields.getTextInputValue("sobrenome");
+            interaction.fields
+                .getTextInputValue("sobrenome")
+                .trim();
 
         const secretario =
-            interaction.fields.getTextInputValue("secretario");
+            interaction.fields
+                .getTextInputValue("secretario")
+                .trim();
 
         try {
 
@@ -415,6 +643,7 @@ async function handleModal(interaction) {
                 content:
                     "✅ Registro realizado com sucesso!\n\n" +
                     "Bem-vindo ao Padre Nosso MC.",
+
                 flags: 64
             });
 
@@ -427,13 +656,18 @@ async function handleModal(interaction) {
 
             await interaction.reply({
                 content:
-                    `❌ ${error.message || "Não foi possível realizar o registro."}`,
+                    `❌ ${
+                        error.message ||
+                        "Não foi possível realizar o registro."
+                    }`,
+
                 flags: 64
             });
 
         }
 
         apagarResposta(interaction);
+
         return;
 
     }
