@@ -13,6 +13,10 @@ const {
 } = require("../modals/registroModal");
 
 const {
+    criarFarmModal
+} = require("../modals/farmModal");
+
+const {
     criarEditorButtons
 } = require("../buttons/embedEditorButtons");
 
@@ -82,6 +86,18 @@ function apagarResposta(interaction, tempo = 10000) {
 async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
+
+    // ==================================================
+    // REGISTRAR FARM
+    // ==================================================
+
+    if (interaction.customId === "farm_registrar") {
+
+        return interaction.showModal(
+            criarFarmModal()
+        );
+
+    }
 
     // ==================================================
     // REGISTRO
@@ -335,24 +351,38 @@ async function handleButton(interaction) {
 
     }
 
-   // ==================================================
-// VISUALIZAR PRÉVIA
-// ==================================================
+    // ==================================================
+    // VISUALIZAR PRÉVIA
+    // ==================================================
 
-if (interaction.customId === "embed_preview") {
+    if (interaction.customId === "embed_preview") {
 
-    const previewCompleto =
-        gerarPreviewCompleto(
-            interaction.user.id,
-            interaction.guild
-        );
+        const previewCompleto =
+            gerarPreviewCompleto(
+                interaction.user.id,
+                interaction.guild
+            );
 
-    if (!previewCompleto) {
+        if (!previewCompleto) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Nenhum editor de embed foi encontrado.",
+
+                flags: 64
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
 
         await interaction.reply({
 
-            content:
-                "❌ Nenhum editor de embed foi encontrado.",
+            embeds: previewCompleto,
 
             flags: 64
 
@@ -363,20 +393,6 @@ if (interaction.customId === "embed_preview") {
         return;
 
     }
-
-    await interaction.reply({
-
-        embeds: previewCompleto,
-
-        flags: 64
-
-    });
-
-    apagarResposta(interaction);
-
-    return;
-
-}
 
     // ==================================================
     // PUBLICAR EMBED

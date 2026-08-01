@@ -26,6 +26,20 @@ const {
 } = require("../buttons/embedEditorButtons");
 
 // ======================================================
+// SISTEMA DE FARM
+// ======================================================
+
+const {
+    registrarFarm,
+    obterPainelMembro,
+    salvarPainelMembro
+} = require("../services/farmService");
+
+const {
+    criarFarmEmbed
+} = require("../embeds/farmEmbed");
+
+// ======================================================
 // APAGAR RESPOSTA APÓS 10 SEGUNDOS
 // ======================================================
 
@@ -134,6 +148,389 @@ async function atualizarPainelEditor(
 async function handleModal(interaction) {
 
     if (!interaction.isModalSubmit()) return;
+
+    // ==================================================
+    // REGISTRO DE FARM
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "farm_modal_registro"
+    ) {
+
+        const tijolos =
+            interaction.fields
+                .getTextInputValue("farm_tijolos")
+                .trim();
+
+        const materiais =
+            interaction.fields
+                .getTextInputValue("farm_materiais")
+                .trim();
+
+        const CATEGORIA_PLANILHAS =
+            "1533146414576566292";
+
+        try {
+
+            await interaction.deferReply({
+                flags: 64
+            });
+
+            const nomeExibicao =
+                interaction.member.displayName;
+
+            const resumo =
+                await registrarFarm({
+
+                    discordId:
+                        interaction.user.id,
+
+                    tijolos,
+
+                    materiais
+
+                });
+
+            let painel =
+                await obterPainelMembro(
+                    interaction.user.id
+                );
+
+            let canal = null;
+
+            // ==========================================
+            // LOCALIZAR CANAL EXISTENTE
+            // ==========================================
+
+            if (painel?.canalId) {
+
+                canal =
+                    interaction.guild.channels.cache.get(
+                        painel.canalId
+                    );
+
+            }
+
+            // ==========================================
+            // CRIAR CANAL INDIVIDUAL
+            // ==========================================
+
+            if (!canal) {
+
+                const nomeCanal = nomeExibicao
+
+                    .toLowerCase()
+
+                    .normalize("NFD")
+
+                    .replace(
+                        /[\u0300-\u036f]/g,
+                        ""
+                    )
+
+                    .replace(
+                        /[^a-z0-9-]/g,
+                        "-"
+                    )
+
+                    .replace(
+                        /-+/g,
+                        "-"
+                    )
+
+                    .replace(
+                        /^-|-$/g,
+                        ""
+                    )
+
+                    .slice(0, 90) ||
+                    `farm-${interaction.user.id}`;
+
+                canal =
+                    await interaction.guild.channels.create({
+
+                        name: nomeCanal,
+
+                        type: 0,
+
+                        parent:
+                            CATEGORIA_PLANILHAS,
+
+                        topic:
+                            `Planilha de farm de ${nomeExibicao}`
+
+                    });
+
+            }
+
+            const embed =
+                criarFarmEmbed(
+                    nomeExibicao,
+                    resumo
+                );
+
+            let mensagem = null;
+
+            // ==========================================
+            // LOCALIZAR MENSAGEM EXISTENTE
+            // ==========================================
+
+            if (
+                painel?.mensagemId &&
+                canal.isTextBased()
+            ) {
+
+                mensagem =
+                    await canal.messages.fetch(
+                        painel.mensagemId
+                    ).catch(() => null);
+
+            }
+
+            // ==========================================
+            // ATUALIZAR OU CRIAR EMBED
+            // ==========================================
+
+            if (mensagem) {
+
+                await mensagem.edit({
+                    embeds: [embed]
+                });
+
+            } else {
+
+                mensagem =
+                    await canal.send({
+                        embeds: [embed]
+                    });
+
+                try {
+
+                    await mensagem.pin();
+
+                } catch {}
+
+            }
+
+            // ==========================================
+            // SALVAR PAINEL DO MEMBRO
+            // ==========================================
+
+            await salvarPainelMembro({
+
+                discordId:
+                    interaction.user.id,
+
+                nomeExibicao,
+
+                canalId:
+                    canal.id,
+
+                mensagemId:
+                    mensagem.id
+
+            });
+// ==========================================
+// LOG DO FARM
+// ==========================================
+
+try {
+
+    const canalLogs =
+        interaction.guild.channels.cache.get(
+            "1530680762259476672"
+        );
+
+    if (
+        canalLogs &&
+        canalLogs.isTextBased()
+    ) {
+
+        const {
+            EmbedBuilder
+        } = require("discord.js");
+
+        const embedLog =
+            new EmbedBuilder()
+
+                .setColor(COLORS.VERDE)
+
+                .setTitle("📦 Novo Registro de Farm")
+
+                .addFields(
+
+                    {
+                        name: "👤 Integrante",
+                        value: `${interaction.user}`,
+                        inline: false
+                    },
+
+                    {
+                        name: "🧱 Tijolos",
+                        value: tijolos || "0",
+                        inline: true
+                    },
+
+                    {
+                        name: "🔩 Materiais",
+                        value: materiais || "0",
+                        inline: true
+                    },
+
+                    {
+                        name: "📁 Planilha",
+                        value: `${canal}`,
+                        inline: false
+                    }
+
+                )
+
+                .setFooter({
+
+                    text: "Padre Nosso MC"
+
+                })
+
+                .setTimestamp();
+
+        await canalLogs.send({
+
+            embeds: [
+                embedLog
+            ]
+
+        });
+
+    }
+
+} catch (erroLog) {
+
+    console.error(
+        "Erro ao enviar log de farm:",
+        erroLog
+    );
+
+}
+
+// ==========================================
+// HISTÓRICO DO FARM
+// ==========================================
+
+try {
+
+    const {
+        EmbedBuilder
+    } = require("discord.js");
+
+    const embedHistorico =
+        new EmbedBuilder()
+
+            .setColor(COLORS.VERDE)
+
+            .setTitle("📦 Registro de Farm")
+
+            .setDescription(
+                "Novo lançamento registrado."
+            )
+
+            .addFields(
+
+                {
+                    name: "🧱 Tijolos",
+                    value: `+${tijolos || "0"} unidades`,
+                    inline: true
+                },
+
+                {
+                    name: "🔩 Materiais",
+                    value: `+${materiais || "0"} unidades`,
+                    inline: true
+                },
+
+                {
+                    name: "👤 Registrado por",
+                    value: `${interaction.user}`,
+                    inline: false
+                }
+
+            )
+
+            .setFooter({
+
+                text: "Padre Nosso MC • Histórico"
+
+            })
+
+            .setTimestamp();
+
+    await canal.send({
+
+        embeds: [
+            embedHistorico
+        ]
+
+    });
+
+} catch (erroHistorico) {
+
+    console.error(
+        "Erro ao enviar histórico:",
+        erroHistorico
+    );
+
+}
+
+await interaction.editReply({
+
+    content:
+        `✅ Farm registrado com sucesso.\n\n` +
+        `📁 Planilha: ${canal}`
+
+});
+
+apagarResposta(interaction);
+
+            apagarResposta(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao registrar farm:",
+                error
+            );
+
+            const mensagemErro =
+                `❌ ${
+                    error.message ||
+                    "Não foi possível registrar o farm."
+                }`;
+
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
+
+                await interaction.editReply({
+                    content: mensagemErro
+                }).catch(() => {});
+
+            } else {
+
+                await interaction.reply({
+                    content: mensagemErro,
+                    flags: 64
+                }).catch(() => {});
+
+            }
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
 
     // ==================================================
     // FINANCEIRO — ENTRADA E SAÍDA

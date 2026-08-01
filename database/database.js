@@ -5,15 +5,22 @@ const fs = require("fs");
 // ======================================================
 // CAMINHO DO BANCO
 // ======================================================
-// No Railway usa o Volume Persistente.
-// No computador continua usando a pasta database.
+// No Railway utiliza o Volume Persistente.
+// No computador utiliza a pasta database.
 
 const pastaBanco =
     process.env.RAILWAY_VOLUME_MOUNT_PATH ||
     __dirname;
 
 if (!fs.existsSync(pastaBanco)) {
-    fs.mkdirSync(pastaBanco, { recursive: true });
+
+    fs.mkdirSync(
+        pastaBanco,
+        {
+            recursive: true
+        }
+    );
+
 }
 
 const caminhoBanco = path.join(
@@ -21,7 +28,9 @@ const caminhoBanco = path.join(
     "membros.db"
 );
 
-console.log(`📁 Banco localizado em: ${caminhoBanco}`);
+console.log(
+    `📁 Banco localizado em: ${caminhoBanco}`
+);
 
 // ======================================================
 // CONEXÃO
@@ -42,7 +51,9 @@ const db = new sqlite3.Database(
 
         }
 
-        console.log("🗄 Banco conectado com sucesso.");
+        console.log(
+            "🗄 Banco conectado com sucesso."
+        );
 
         iniciarBanco();
 
@@ -53,21 +64,32 @@ const db = new sqlite3.Database(
 // EXECUTAR SQL
 // ======================================================
 
-function executar(sql, parametros = []) {
+function executar(
+    sql,
+    parametros = []
+) {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(
+        (resolve, reject) => {
 
-        db.run(sql, parametros, function (error) {
+            db.run(
+                sql,
+                parametros,
+                function (error) {
 
-            if (error) {
-                return reject(error);
-            }
+                    if (error) {
 
-            resolve(this);
+                        return reject(error);
 
-        });
+                    }
 
-    });
+                    resolve(this);
+
+                }
+            );
+
+        }
+    );
 
 }
 
@@ -75,21 +97,32 @@ function executar(sql, parametros = []) {
 // CONSULTAR TODAS AS LINHAS
 // ======================================================
 
-function consultarTodos(sql, parametros = []) {
+function consultarTodos(
+    sql,
+    parametros = []
+) {
 
-    return new Promise((resolve, reject) => {
+    return new Promise(
+        (resolve, reject) => {
 
-        db.all(sql, parametros, (error, rows) => {
+            db.all(
+                sql,
+                parametros,
+                (error, rows) => {
 
-            if (error) {
-                return reject(error);
-            }
+                    if (error) {
 
-            resolve(rows);
+                        return reject(error);
 
-        });
+                    }
 
-    });
+                    resolve(rows);
+
+                }
+            );
+
+        }
+    );
 
 }
 
@@ -103,13 +136,16 @@ async function garantirColuna(
     definicao
 ) {
 
-    const colunas = await consultarTodos(
-        `PRAGMA table_info(${tabela})`
-    );
+    const colunas =
+        await consultarTodos(
+            `PRAGMA table_info(${tabela})`
+        );
 
-    const existe = colunas.some(
-        coluna => coluna.name === nomeColuna
-    );
+    const existe =
+        colunas.some(
+            coluna =>
+                coluna.name === nomeColuna
+        );
 
     if (existe) return;
 
@@ -165,19 +201,83 @@ async function iniciarBanco() {
             )
         `);
 
-        await garantirColuna("membros","nome","TEXT");
-        await garantirColuna("membros","vulgo","TEXT");
-        await garantirColuna("membros","sobrenome","TEXT");
-        await garantirColuna("membros","nomeCompleto","TEXT");
-        await garantirColuna("membros","secretario","TEXT");
-        await garantirColuna("membros","cargo","TEXT DEFAULT 'Prospect'");
-        await garantirColuna("membros","advertencias","INTEGER DEFAULT 0");
-        await garantirColuna("membros","promocoes","INTEGER DEFAULT 0");
-        await garantirColuna("membros","rebaixamentos","INTEGER DEFAULT 0");
-        await garantirColuna("membros","status","TEXT DEFAULT 'Ativo'");
-        await garantirColuna("membros","dataRegistro","TEXT");
-        await garantirColuna("membros","ultimaPromocao","TEXT");
-        await garantirColuna("membros","ultimaAdvertencia","TEXT");
+        await garantirColuna(
+            "membros",
+            "nome",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "vulgo",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "sobrenome",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "nomeCompleto",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "secretario",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "cargo",
+            "TEXT DEFAULT 'Prospect'"
+        );
+
+        await garantirColuna(
+            "membros",
+            "advertencias",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "membros",
+            "promocoes",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "membros",
+            "rebaixamentos",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "membros",
+            "status",
+            "TEXT DEFAULT 'Ativo'"
+        );
+
+        await garantirColuna(
+            "membros",
+            "dataRegistro",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "ultimaPromocao",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "membros",
+            "ultimaAdvertencia",
+            "TEXT"
+        );
 
         // ==================================================
         // ADVERTÊNCIAS
@@ -305,8 +405,165 @@ async function iniciarBanco() {
             )
         `);
 
+        // ==================================================
+        // FARM — CANAL E EMBED INDIVIDUAL
+        // ==================================================
+        /*
+         * Guarda o canal individual de cada integrante
+         * e a mensagem fixa que será sempre atualizada.
+         */
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS farmMembros (
+
+                discordId TEXT PRIMARY KEY,
+
+                nomeExibicao TEXT,
+
+                canalId TEXT UNIQUE,
+
+                mensagemId TEXT,
+
+                ultimaAtualizacao TEXT
+
+            )
+        `);
+
+        await garantirColuna(
+            "farmMembros",
+            "nomeExibicao",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmMembros",
+            "canalId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmMembros",
+            "mensagemId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmMembros",
+            "ultimaAtualizacao",
+            "TEXT"
+        );
+
+        // ==================================================
+        // FARM — HISTÓRICO DE LANÇAMENTOS
+        // ==================================================
+        /*
+         * Cada envio do formulário gera uma linha.
+         *
+         * dataDia:
+         * permite calcular a meta diária de Materiais.
+         *
+         * semanaInicio:
+         * permite calcular a meta semanal de Tijolos
+         * e gerar o ranking da semana.
+         */
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS farmRegistros (
+
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                discordId TEXT NOT NULL,
+
+                tijolos INTEGER DEFAULT 0,
+
+                materiais INTEGER DEFAULT 0,
+
+                dataRegistro TEXT NOT NULL,
+
+                dataDia TEXT NOT NULL,
+
+                semanaInicio TEXT NOT NULL
+
+            )
+        `);
+
+        await garantirColuna(
+            "farmRegistros",
+            "discordId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmRegistros",
+            "tijolos",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "farmRegistros",
+            "materiais",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "farmRegistros",
+            "dataRegistro",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmRegistros",
+            "dataDia",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "farmRegistros",
+            "semanaInicio",
+            "TEXT"
+        );
+
+        // ==================================================
+        // ÍNDICES DO FARM
+        // ==================================================
+        /*
+         * Melhoram a velocidade do relatório,
+         * do ranking e das consultas individuais.
+         */
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_farm_registros_discord
+            ON farmRegistros (discordId)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_farm_registros_dia
+            ON farmRegistros (dataDia)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_farm_registros_semana
+            ON farmRegistros (semanaInicio)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_farm_registros_membro_semana
+            ON farmRegistros (
+                discordId,
+                semanaInicio
+            )
+        `);
+
         console.log(
             "✅ Estrutura do banco verificada e atualizada."
+        );
+
+        console.log(
+            "✅ Estrutura do sistema de farm preparada."
         );
 
     } catch (error) {
