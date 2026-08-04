@@ -1,6 +1,13 @@
-const { EmbedBuilder } = require("discord.js");
+const {
+    EmbedBuilder
+} = require("discord.js");
+
 const COLORS = require("../config/colors");
-const { criarFinanceiro } = require("../embeds/financeiroEmbed");
+const settings = require("../config/settings.json");
+
+// ======================================================
+// DASHBOARD PRINCIPAL
+// ======================================================
 
 function criarDashboard(stats) {
 
@@ -8,31 +15,36 @@ function criarDashboard(stats) {
 
         .setColor(COLORS.VERDE)
 
-        .setTitle("🏍 PADRE NOSSO MC")
+        .setTitle(`💵 ${settings.mc.nome.toUpperCase()}`)
 
         .setDescription(
-`# 📊 Dashboard Administrativo
+`# 📊 Painel Administrativo
 
-👥 **Total de membros:** ${stats.total}
+👥 **Total de Integrantes:** ${stats.total}
 
-🟢 **Prospects:** ${stats.prospect}
+🎓 **Em Treinamento:** ${stats.prospect}
 
-⚪ **Membros:** ${stats.membro}
+🤝 **Membros:** ${stats.membro}
 
-🔴 **Diretoria:** ${stats.diretoria}
+🏛️ **Liderança e Gestão:** ${stats.diretoria}
 
-⚠ **Advertências:** ${stats.advertencias}`
+⚠️ **Advertências:** ${stats.advertencias}`
         )
-
-        .setTimestamp()
 
         .setFooter({
 
-            text: "Padre Nosso MC"
+            text:
+                `${settings.mc.nome} • Painel Administrativo`
 
-        });
+        })
+
+        .setTimestamp();
 
 }
+
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
 
 module.exports = {
 

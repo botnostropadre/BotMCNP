@@ -4,10 +4,16 @@ const {
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    MessageFlags
 } = require("discord.js");
 
 const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
+
+// ======================================================
+// COMANDO /SETUPEMBED
+// ======================================================
 
 module.exports = {
 
@@ -15,7 +21,9 @@ module.exports = {
 
         .setName("setupembed")
 
-        .setDescription("Cria o painel fixo do editor de embeds.")
+        .setDescription(
+            "Cria o painel fixo do editor de embeds."
+        )
 
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
@@ -46,24 +54,30 @@ As formatações do Discord podem ser utilizadas normalmente nos textos.`
                 )
 
                 .setFooter({
-                    text: "Padre Nosso MC"
-                });
+                    text:
+                        `${settings.mc.nome} • Editor de Embeds`
+                })
 
-            const row = new ActionRowBuilder()
+                .setTimestamp();
 
-                .addComponents(
+            const row =
+                new ActionRowBuilder()
 
-                    new ButtonBuilder()
+                    .addComponents(
 
-                        .setCustomId("embed_novo")
+                        new ButtonBuilder()
 
-                        .setLabel("Novo Embed")
+                            .setCustomId("embed_novo")
 
-                        .setEmoji("➕")
+                            .setLabel("Novo Embed")
 
-                        .setStyle(ButtonStyle.Success)
+                            .setEmoji("➕")
 
-                );
+                            .setStyle(
+                                ButtonStyle.Success
+                            )
+
+                    );
 
             await interaction.channel.send({
 
@@ -75,9 +89,11 @@ As formatações do Discord podem ser utilizadas normalmente nos textos.`
 
             await interaction.reply({
 
-                content: "✅ Painel do editor de embeds criado.",
+                content:
+                    "✅ Painel do editor de embeds criado.",
 
-                flags: 64
+                flags:
+                    MessageFlags.Ephemeral
 
             });
 
@@ -105,15 +121,20 @@ As formatações do Discord podem ser utilizadas normalmente nos textos.`
                 error
             );
 
-            if (!interaction.replied) {
+            if (
+                !interaction.replied &&
+                !interaction.deferred
+            ) {
 
                 await interaction.reply({
 
-                    content: "❌ Não foi possível criar o painel de embeds.",
+                    content:
+                        "❌ Não foi possível criar o painel de embeds.",
 
-                    flags: 64
+                    flags:
+                        MessageFlags.Ephemeral
 
-                });
+                }).catch(() => {});
 
             }
 

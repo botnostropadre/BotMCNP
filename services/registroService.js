@@ -25,7 +25,7 @@ function executarBanco(sql, parametros = []) {
 }
 
 // ======================================================
-// REGISTRAR MEMBRO
+// REGISTRAR INTEGRANTE
 // ======================================================
 
 async function registrar(interaction, dados) {
@@ -67,7 +67,7 @@ async function registrar(interaction, dados) {
     }
 
     // ==================================================
-    // BUSCAR MEMBRO
+    // BUSCAR INTEGRANTE
     // ==================================================
 
     let membro;
@@ -81,7 +81,7 @@ async function registrar(interaction, dados) {
     } catch (error) {
 
         console.error(
-            "Erro ao buscar membro durante o registro:",
+            "Erro ao buscar integrante durante o registro:",
             error
         );
 
@@ -92,27 +92,29 @@ async function registrar(interaction, dados) {
     }
 
     // ==================================================
-    // VALIDAR CARGO PROSPECT
+    // VALIDAR CARGO TREINAMENTO
     // ==================================================
 
-    const cargoProspectId = settings.cargos?.prospect;
+    const cargoTreinamentoId =
+        settings.cargos?.treinamento;
 
-    if (!cargoProspectId) {
+    if (!cargoTreinamentoId) {
 
         throw new Error(
-            "O ID do cargo Prospect não está configurado no settings.json."
+            "O ID do cargo Treinamento não está configurado no settings.json."
         );
 
     }
 
-    const cargoProspect = await interaction.guild.roles
-        .fetch(cargoProspectId)
-        .catch(() => null);
+    const cargoTreinamento =
+        await interaction.guild.roles
+            .fetch(cargoTreinamentoId)
+            .catch(() => null);
 
-    if (!cargoProspect) {
+    if (!cargoTreinamento) {
 
         throw new Error(
-            "O cargo Prospect não foi encontrado no servidor. Verifique o ID no settings.json."
+            "O cargo Treinamento não foi encontrado no servidor. Verifique o ID no settings.json."
         );
 
     }
@@ -121,7 +123,8 @@ async function registrar(interaction, dados) {
     // VALIDAR POSIÇÃO DO BOT
     // ==================================================
 
-    const membroBot = interaction.guild.members.me;
+    const membroBot =
+        interaction.guild.members.me;
 
     if (!membroBot) {
 
@@ -133,11 +136,11 @@ async function registrar(interaction, dados) {
 
     if (
         membroBot.roles.highest.position <=
-        cargoProspect.position
+        cargoTreinamento.position
     ) {
 
         throw new Error(
-            "O cargo do bot precisa estar acima do cargo Prospect na lista de cargos do servidor."
+            "O cargo do bot precisa estar acima do cargo Treinamento na lista de cargos do servidor."
         );
 
     }
@@ -180,7 +183,7 @@ async function registrar(interaction, dados) {
     if (cadastroExistente) {
 
         throw new Error(
-            "Você já possui um registro no sistema do motoclube."
+            `Você já possui um registro no sistema da ${settings.mc.nome}.`
         );
 
     }
@@ -189,7 +192,8 @@ async function registrar(interaction, dados) {
     // ALTERAR NICKNAME
     // ==================================================
 
-    const nicknameAnterior = membro.nickname;
+    const nicknameAnterior =
+        membro.nickname;
 
     try {
 
@@ -205,7 +209,10 @@ async function registrar(interaction, dados) {
             error
         );
 
-        if (interaction.guild.ownerId === membro.id) {
+        if (
+            interaction.guild.ownerId ===
+            membro.id
+        ) {
 
             throw new Error(
                 "O Discord não permite que o bot altere o apelido do dono do servidor."
@@ -219,30 +226,34 @@ async function registrar(interaction, dados) {
 
     }
 
-    // ==================================================
-    // ADICIONAR CARGO PROSPECT
+       // ==================================================
+    // ADICIONAR CARGO TREINAMENTO
     // ==================================================
 
     try {
 
         await membro.roles.add(
-            cargoProspect,
+            cargoTreinamento,
             `Registro realizado por ${interaction.user.tag}`
         );
 
     } catch (error) {
 
         console.error(
-            "Erro ao adicionar cargo Prospect:",
+            "Erro ao adicionar cargo Treinamento:",
             error
         );
 
         try {
-            await membro.setNickname(nicknameAnterior);
+
+            await membro.setNickname(
+                nicknameAnterior
+            );
+
         } catch {}
 
         throw new Error(
-            "Não foi possível adicionar o cargo Prospect. Verifique a posição do cargo do bot e a permissão Gerenciar Cargos."
+            "Não foi possível adicionar o cargo Treinamento. Verifique a posição do cargo do bot e a permissão Gerenciar Cargos."
         );
 
     }
@@ -251,7 +262,8 @@ async function registrar(interaction, dados) {
     // SALVAR NO BANCO
     // ==================================================
 
-    const dataRegistro = new Date().toLocaleString("pt-BR");
+    const dataRegistro =
+        new Date().toLocaleString("pt-BR");
 
     try {
 
@@ -280,7 +292,7 @@ async function registrar(interaction, dados) {
                 sobrenome,
                 nomeCompleto,
                 secretario,
-                "Prospect",
+                "Treinamento",
                 0,
                 0,
                 0,
@@ -301,11 +313,19 @@ async function registrar(interaction, dados) {
         // Desfaz as alterações no Discord caso o banco falhe.
 
         try {
-            await membro.roles.remove(cargoProspect);
+
+            await membro.roles.remove(
+                cargoTreinamento
+            );
+
         } catch {}
 
         try {
-            await membro.setNickname(nicknameAnterior);
+
+            await membro.setNickname(
+                nicknameAnterior
+            );
+
         } catch {}
 
         throw new Error(
@@ -318,68 +338,127 @@ async function registrar(interaction, dados) {
     // ENVIAR LOG
     // ==================================================
 
-    const canalLogsId = settings.canais?.logs;
+    const canalLogsId =
+        settings.canais?.logs;
 
     if (canalLogsId) {
 
         try {
 
-            const canalLogs = await interaction.guild.channels
-                .fetch(canalLogsId);
+            const canalLogs =
+                await interaction.guild.channels
+                    .fetch(canalLogsId);
 
-            if (canalLogs?.isTextBased()) {
+            if (
+                canalLogs &&
+                canalLogs.isTextBased()
+            ) {
 
                 await canalLogs.send({
-                    embeds: [
-                        {
-                            color: COLORS.VERDE,
 
-                            title: "📋 Novo Registro",
+                    embeds: [
+
+                        {
+
+                            color:
+                                COLORS.VERDE,
+
+                            title:
+                                "📋 Novo Registro",
 
                             thumbnail: {
-                                url: interaction.user.displayAvatarURL({
-                                    size: 256
-                                })
+
+                                url:
+                                    interaction.user
+                                        .displayAvatarURL({
+                                            size: 256
+                                        })
+
                             },
 
                             fields: [
+
                                 {
-                                    name: "👤 Integrante",
-                                    value: nomeCompleto,
-                                    inline: false
+
+                                    name:
+                                        "👤 Integrante",
+
+                                    value:
+                                        nomeCompleto,
+
+                                    inline:
+                                        false
+
                                 },
+
                                 {
-                                    name: "📝 Secretário responsável",
-                                    value: secretario,
-                                    inline: true
+
+                                    name:
+                                        "🤝 Recrutamento responsável",
+
+                                    value:
+                                        secretario,
+
+                                    inline:
+                                        true
+
                                 },
+
                                 {
-                                    name: "🎖 Cargo",
-                                    value: "Prospect",
-                                    inline: true
+
+                                    name:
+                                        "🎖 Cargo",
+
+                                    value:
+                                        "Treinamento",
+
+                                    inline:
+                                        true
+
                                 },
+
                                 {
-                                    name: "📌 Status",
-                                    value: "Ativo",
-                                    inline: true
+
+                                    name:
+                                        "📌 Status",
+
+                                    value:
+                                        "Ativo",
+
+                                    inline:
+                                        true
+
                                 },
+
                                 {
-                                    name: "💬 Discord",
-                                    value: `${interaction.user}`,
-                                    inline: false
+
+                                    name:
+                                        "💬 Discord",
+
+                                    value:
+                                        `${interaction.user}`,
+
+                                    inline:
+                                        false
+
                                 }
+
                             ],
 
                             footer: {
-                                text: `${
-                                    settings.mc?.nome ||
-                                    "Padre Nosso MC"
-                                } • Sistema de Registro`
+
+                                text:
+                                    `${settings.mc.nome} • Sistema de Registro`
+
                             },
 
-                            timestamp: new Date().toISOString()
+                            timestamp:
+                                new Date().toISOString()
+
                         }
+
                     ]
+
                 });
 
             }
@@ -398,9 +477,15 @@ async function registrar(interaction, dados) {
     }
 
     return {
+
         nomeCompleto,
-        cargo: "Prospect",
-        status: "Ativo"
+
+        cargo:
+            "Treinamento",
+
+        status:
+            "Ativo"
+
     };
 
 }

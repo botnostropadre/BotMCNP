@@ -1,31 +1,101 @@
-const { alterarCargo } = require("../services/cargoService");
+const {
+    alterarCargo
+} = require("../services/cargoService");
+
+// ======================================================
+// MENU DE PROMOÇÃO
+// ======================================================
 
 async function handlePromoverMenu(interaction) {
 
     if (!interaction.isStringSelectMenu()) return;
 
-    if (!interaction.customId.startsWith("promover_")) return;
+    if (
+        !interaction.customId.startsWith(
+            "promover_"
+        )
+    ) {
 
-    const membroId = interaction.customId.split("_")[1];
+        return;
 
-    const membro = await interaction.guild.members.fetch(membroId);
+    }
 
-    const cargoSelecionado = interaction.values[0];
+    try {
 
-        const nomeCargo = await alterarCargo(
-        interaction,
-        membro,
-        cargoSelecionado,
-        "Promoção"
-    );
+        const membroId =
+            interaction.customId.split("_")[1];
 
-    await interaction.update({
+        const membro =
+            await interaction.guild.members
+                .fetch(membroId)
+                .catch(() => null);
 
-        content: `✅ ${membro} promovido para **${nomeCargo}**.`,
+        if (!membro) {
 
-        components: []
+            await interaction.update({
 
-    });
+                content:
+                    "❌ Não foi possível localizar esse integrante no servidor.",
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        const cargoSelecionado =
+            interaction.values[0];
+
+        const nomeCargo =
+            await alterarCargo(
+                interaction,
+                membro,
+                cargoSelecionado,
+                "Promoção"
+            );
+
+        await interaction.update({
+
+            content:
+                `✅ ${membro} foi promovido para **${nomeCargo}**.`,
+
+            components: []
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao processar menu de promoção:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Não foi possível concluir a promoção.",
+
+                components: []
+
+            }).catch(() => {});
+
+        }
+
+    }
 
 }
-module.exports = { handlePromoverMenu };
+
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
+
+module.exports = {
+    handlePromoverMenu
+};

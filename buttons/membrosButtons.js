@@ -4,6 +4,10 @@ const {
     ButtonStyle
 } = require("discord.js");
 
+// ======================================================
+// MENU DE GESTÃO DE INTEGRANTES
+// ======================================================
+
 function criarMenuMembros() {
 
     return [
@@ -46,7 +50,7 @@ function criarMenuMembros() {
 
                     .setCustomId("membros_ficha")
 
-                    .setLabel("📋 Ficha")
+                    .setLabel("📋 Perfil")
 
                     .setStyle(ButtonStyle.Primary),
 
@@ -54,7 +58,7 @@ function criarMenuMembros() {
 
                     .setCustomId("membros_demitir")
 
-                    .setLabel("🗑 Demitir")
+                    .setLabel("🚪 Desligar")
 
                     .setStyle(ButtonStyle.Danger),
 
@@ -71,6 +75,10 @@ function criarMenuMembros() {
     ];
 
 }
+
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
 
 module.exports = {
 

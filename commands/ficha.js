@@ -1,10 +1,41 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } = require("discord.js");
 
-const { buscarMembro } = require("../database/membroRepository");
-const { criarFicha } = require("../embeds/fichaEmbed");
+const {
+    buscarMembro
+} = require("../database/membroRepository");
+
+const {
+    criarFicha
+} = require("../embeds/fichaEmbed");
+
+// ======================================================
+// APAGAR RESPOSTA TEMPORÁRIA
+// ======================================================
+
+function apagarResposta(
+    interaction,
+    tempo = 10000
+) {
+
+    setTimeout(async () => {
+
+        try {
+
+            await interaction.deleteReply();
+
+        } catch {}
+
+    }, tempo);
+
+}
+
+// ======================================================
+// COMANDO /FICHA
+// ======================================================
 
 module.exports = {
 
@@ -12,7 +43,9 @@ module.exports = {
 
         .setName("ficha")
 
-        .setDescription("Exibe a ficha de um integrante.")
+        .setDescription(
+            "Exibe o perfil de um integrante."
+        )
 
         .addUserOption(option =>
 
@@ -20,79 +53,101 @@ module.exports = {
 
                 .setName("membro")
 
-                .setDescription("Integrante que deseja consultar")
+                .setDescription(
+                    "Selecione o integrante que deseja consultar."
+                )
 
                 .setRequired(false)
 
         )
 
         .setDefaultMemberPermissions(
-
             PermissionFlagsBits.ManageRoles
-
         ),
 
     async execute(interaction) {
 
         const usuario =
-            interaction.options.getUser("membro") ||
+            interaction.options.getUser(
+                "membro"
+            ) ||
             interaction.user;
 
-        const membro = await buscarMembro(usuario.id);
+        try {
 
-        if (!membro) {
+            const membro =
+                await buscarMembro(
+                    usuario.id
+                );
+
+            if (!membro) {
+
+                await interaction.reply({
+
+                    content:
+                        "❌ Este usuário não possui registro no sistema.",
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            const advertencias =
+                Number(
+                    membro.advertencias || 0
+                );
+
+            const embed =
+                criarFicha(
+                    usuario,
+                    membro,
+                    advertencias
+                );
 
             await interaction.reply({
 
-                content: "❌ Este usuário não possui registro.",
+                embeds: [embed],
 
-                flags: 64
+                flags:
+                    MessageFlags.Ephemeral
 
             });
 
-            setTimeout(async () => {
+            apagarResposta(interaction);
 
-                try {
+        } catch (error) {
 
-                    await interaction.deleteReply();
+            console.error(
+                "Erro ao consultar perfil do integrante:",
+                error
+            );
 
-                } catch {}
+            if (
+                !interaction.replied &&
+                !interaction.deferred
+            ) {
 
-            }, 10000);
+                await interaction.reply({
 
-            return;
+                    content:
+                        "❌ Não foi possível consultar o perfil deste integrante.",
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                });
+
+            }
+
+            apagarResposta(interaction);
 
         }
-
-        const advertencias = 0;
-
-        const embed = criarFicha(
-
-            usuario,
-
-            membro,
-
-            advertencias
-
-        );
-
-        await interaction.reply({
-
-            embeds: [embed],
-
-            flags: 64
-
-        });
-
-        setTimeout(async () => {
-
-            try {
-
-                await interaction.deleteReply();
-
-            } catch {}
-
-        }, 10000);
 
     }
 

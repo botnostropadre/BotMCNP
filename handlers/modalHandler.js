@@ -115,6 +115,7 @@ async function atualizarPainelEditor(
      * Quando o modal foi aberto por um botão ou menu,
      * interaction.message representa o painel original.
      */
+
     if (interaction.message) {
 
         await interaction.update({
@@ -258,7 +259,7 @@ async function handleModal(interaction) {
                             CATEGORIA_PLANILHAS,
 
                         topic:
-                            `Planilha de farm de ${nomeExibicao}`
+                            `Planilha de farm de ${nomeExibicao} • ${settings.mc.nome}`
 
                     });
 
@@ -314,7 +315,7 @@ async function handleModal(interaction) {
             }
 
             // ==========================================
-            // SALVAR PAINEL DO MEMBRO
+            // SALVAR PAINEL DO INTEGRANTE
             // ==========================================
 
             await salvarPainelMembro({
@@ -331,165 +332,204 @@ async function handleModal(interaction) {
                     mensagem.id
 
             });
-// ==========================================
-// LOG DO FARM
-// ==========================================
+            // ==========================================
+            // LOG DO FARM
+            // ==========================================
 
-try {
+            try {
 
-    const canalLogs =
-        interaction.guild.channels.cache.get(
-            "1530680762259476672"
-        );
+                const canalLogs =
+                    interaction.guild.channels.cache.get(
+                        "1530680762259476672"
+                    );
 
-    if (
-        canalLogs &&
-        canalLogs.isTextBased()
-    ) {
+                if (
+                    canalLogs &&
+                    canalLogs.isTextBased()
+                ) {
 
-        const {
-            EmbedBuilder
-        } = require("discord.js");
+                    const {
+                        EmbedBuilder
+                    } = require("discord.js");
 
-        const embedLog =
-            new EmbedBuilder()
+                    const embedLog =
+                        new EmbedBuilder()
 
-                .setColor(COLORS.VERDE)
+                            .setColor(COLORS.VERDE)
 
-                .setTitle("📦 Novo Registro de Farm")
+                            .setTitle(
+                                "📦 Novo Registro de Farm"
+                            )
 
-                .addFields(
+                            .addFields(
 
-                    {
-                        name: "👤 Integrante",
-                        value: `${interaction.user}`,
-                        inline: false
-                    },
+                                {
+                                    name:
+                                        "👤 Integrante",
 
-                    {
-                        name: "🧱 Tijolos",
-                        value: tijolos || "0",
-                        inline: true
-                    },
+                                    value:
+                                        `${interaction.user}`,
 
-                    {
-                        name: "🔩 Materiais",
-                        value: materiais || "0",
-                        inline: true
-                    },
+                                    inline:
+                                        false
+                                },
 
-                    {
-                        name: "📁 Planilha",
-                        value: `${canal}`,
-                        inline: false
-                    }
+                                {
+                                    name:
+                                        "🧱 Tijolos",
 
-                )
+                                    value:
+                                        tijolos || "0",
 
-                .setFooter({
+                                    inline:
+                                        true
+                                },
 
-                    text: "Padre Nosso MC"
+                                {
+                                    name:
+                                        "🔩 Materiais",
 
-                })
+                                    value:
+                                        materiais || "0",
 
-                .setTimestamp();
+                                    inline:
+                                        true
+                                },
 
-        await canalLogs.send({
+                                {
+                                    name:
+                                        "📁 Planilha",
 
-            embeds: [
-                embedLog
-            ]
+                                    value:
+                                        `${canal}`,
 
-        });
+                                    inline:
+                                        false
+                                }
 
-    }
+                            )
 
-} catch (erroLog) {
+                            .setFooter({
 
-    console.error(
-        "Erro ao enviar log de farm:",
-        erroLog
-    );
+                                text:
+                                    `${settings.mc.nome} • Registro de Farm`
 
-}
+                            })
 
-// ==========================================
-// HISTÓRICO DO FARM
-// ==========================================
+                            .setTimestamp();
 
-try {
+                    await canalLogs.send({
 
-    const {
-        EmbedBuilder
-    } = require("discord.js");
+                        embeds: [
+                            embedLog
+                        ]
 
-    const embedHistorico =
-        new EmbedBuilder()
+                    });
 
-            .setColor(COLORS.VERDE)
-
-            .setTitle("📦 Registro de Farm")
-
-            .setDescription(
-                "Novo lançamento registrado."
-            )
-
-            .addFields(
-
-                {
-                    name: "🧱 Tijolos",
-                    value: `+${tijolos || "0"} unidades`,
-                    inline: true
-                },
-
-                {
-                    name: "🔩 Materiais",
-                    value: `+${materiais || "0"} unidades`,
-                    inline: true
-                },
-
-                {
-                    name: "👤 Registrado por",
-                    value: `${interaction.user}`,
-                    inline: false
                 }
 
-            )
+            } catch (erroLog) {
 
-            .setFooter({
+                console.error(
+                    "Erro ao enviar log de farm:",
+                    erroLog
+                );
 
-                text: "Padre Nosso MC • Histórico"
+            }
 
-            })
+            // ==========================================
+            // HISTÓRICO DO FARM
+            // ==========================================
 
-            .setTimestamp();
+            try {
 
-    await canal.send({
+                const {
+                    EmbedBuilder
+                } = require("discord.js");
 
-        embeds: [
-            embedHistorico
-        ]
+                const embedHistorico =
+                    new EmbedBuilder()
 
-    });
+                        .setColor(COLORS.VERDE)
 
-} catch (erroHistorico) {
+                        .setTitle(
+                            "📦 Registro de Farm"
+                        )
 
-    console.error(
-        "Erro ao enviar histórico:",
-        erroHistorico
-    );
+                        .setDescription(
+                            "Novo lançamento registrado."
+                        )
 
-}
+                        .addFields(
 
-await interaction.editReply({
+                            {
+                                name:
+                                    "🧱 Tijolos",
 
-    content:
-        `✅ Farm registrado com sucesso.\n\n` +
-        `📁 Planilha: ${canal}`
+                                value:
+                                    `+${tijolos || "0"} unidades`,
 
-});
+                                inline:
+                                    true
+                            },
 
-apagarResposta(interaction);
+                            {
+                                name:
+                                    "🔩 Materiais",
+
+                                value:
+                                    `+${materiais || "0"} unidades`,
+
+                                inline:
+                                    true
+                            },
+
+                            {
+                                name:
+                                    "👤 Registrado por",
+
+                                value:
+                                    `${interaction.user}`,
+
+                                inline:
+                                    false
+                            }
+
+                        )
+
+                        .setFooter({
+
+                            text:
+                                `${settings.mc.nome} • Histórico de Farm`
+
+                        })
+
+                        .setTimestamp();
+
+                await canal.send({
+
+                    embeds: [
+                        embedHistorico
+                    ]
+
+                });
+
+            } catch (erroHistorico) {
+
+                console.error(
+                    "Erro ao enviar histórico de farm:",
+                    erroHistorico
+                );
+
+            }
+
+            await interaction.editReply({
+
+                content:
+                    `✅ Farm registrado com sucesso.\n\n` +
+                    `📁 Planilha: ${canal}`
+
+            });
 
             apagarResposta(interaction);
 
@@ -512,14 +552,22 @@ apagarResposta(interaction);
             ) {
 
                 await interaction.editReply({
-                    content: mensagemErro
+
+                    content:
+                        mensagemErro
+
                 }).catch(() => {});
 
             } else {
 
                 await interaction.reply({
-                    content: mensagemErro,
-                    flags: 64
+
+                    content:
+                        mensagemErro,
+
+                    flags:
+                        64
+
                 }).catch(() => {});
 
             }
@@ -545,32 +593,36 @@ apagarResposta(interaction);
         )
     ) {
 
-        const tipo = interaction.customId.startsWith(
-            "financeiro_entrada_"
-        )
-            ? "entrada"
-            : "saida";
+        const tipo =
+            interaction.customId.startsWith(
+                "financeiro_entrada_"
+            )
+                ? "entrada"
+                : "saida";
 
-        const categoria = interaction.customId.replace(
-            `financeiro_${tipo}_`,
-            ""
-        );
-
-        const valorTexto =
-            interaction.fields.getTextInputValue(
-                "valor"
+        const categoria =
+            interaction.customId.replace(
+                `financeiro_${tipo}_`,
+                ""
             );
 
+        const valorTexto =
+            interaction.fields
+                .getTextInputValue("valor");
+
         const valor = Number(
+
             valorTexto
                 .replace(/\./g, "")
                 .replace(",", ".")
+
         );
 
         const descricao =
-            interaction.fields.getTextInputValue(
-                "descricao"
-            );
+            interaction.fields
+                .getTextInputValue(
+                    "descricao"
+                );
 
         if (
             !Number.isFinite(valor) ||
@@ -578,9 +630,13 @@ apagarResposta(interaction);
         ) {
 
             await interaction.reply({
+
                 content:
                     "❌ Informe um valor válido.",
-                flags: 64
+
+                flags:
+                    64
+
             });
 
             apagarResposta(interaction);
@@ -594,19 +650,29 @@ apagarResposta(interaction);
             if (tipo === "entrada") {
 
                 await registrarEntrada(
+
                     valor,
+
                     categoria,
+
                     descricao,
+
                     interaction.user.username
+
                 );
 
             } else {
 
                 await registrarSaida(
+
                     valor,
+
                     categoria,
+
                     descricao,
+
                     interaction.user.username
+
                 );
 
             }
@@ -626,8 +692,11 @@ apagarResposta(interaction);
             ) {
 
                 await canalLogs.send({
+
                     embeds: [
+
                         {
+
                             color:
                                 tipo === "entrada"
                                     ? COLORS.VERDE
@@ -639,60 +708,91 @@ apagarResposta(interaction);
                                     : "📤 Nova Saída Financeira",
 
                             fields: [
+
                                 {
-                                    name: "💵 Valor",
+
+                                    name:
+                                        "💵 Valor",
 
                                     value:
                                         valor.toLocaleString(
                                             "pt-BR",
                                             {
-                                                style: "currency",
-                                                currency: "BRL"
+                                                style:
+                                                    "currency",
+
+                                                currency:
+                                                    "BRL"
                                             }
                                         ),
 
-                                    inline: true
-                                },
-                                {
-                                    name: "📂 Categoria",
+                                    inline:
+                                        true
 
-                                    value: categoria,
-
-                                    inline: true
                                 },
+
                                 {
-                                    name: "📝 Descrição",
+
+                                    name:
+                                        "📂 Categoria",
+
+                                    value:
+                                        categoria,
+
+                                    inline:
+                                        true
+
+                                },
+
+                                {
+
+                                    name:
+                                        "📝 Descrição",
 
                                     value:
                                         descricao ||
                                         "Nenhuma descrição informada.",
 
-                                    inline: false
+                                    inline:
+                                        false
+
                                 },
+
                                 {
-                                    name: "👤 Responsável",
+
+                                    name:
+                                        "👤 Responsável",
 
                                     value:
                                         `${interaction.user}`,
 
-                                    inline: false
+                                    inline:
+                                        false
+
                                 }
+
                             ],
 
                             footer: {
+
                                 text:
-                                    "🇮🇹 Padre Nosso MC"
+                                    `${settings.mc.nome} • Sistema Financeiro`
+
                             },
 
                             timestamp:
                                 new Date().toISOString()
+
                         }
+
                     ]
+
                 });
 
             }
 
             await interaction.reply({
+
                 content:
                     `✅ ${
                         tipo === "entrada"
@@ -702,13 +802,18 @@ apagarResposta(interaction);
                     `💰 Valor: **${valor.toLocaleString(
                         "pt-BR",
                         {
-                            style: "currency",
-                            currency: "BRL"
+                            style:
+                                "currency",
+
+                            currency:
+                                "BRL"
                         }
                     )}**\n` +
                     `📂 Categoria: **${categoria}**`,
 
-                flags: 64
+                flags:
+                    64
+
             });
 
             apagarResposta(interaction);
@@ -721,10 +826,13 @@ apagarResposta(interaction);
             );
 
             await interaction.reply({
+
                 content:
                     "❌ Ocorreu um erro ao registrar a movimentação financeira.",
 
-                flags: 64
+                flags:
+                    64
+
             });
 
             apagarResposta(interaction);
@@ -735,7 +843,7 @@ apagarResposta(interaction);
 
     }
 
-    // ==================================================
+        // ==================================================
     // EDITOR DE EMBEDS — TÍTULO
     // ==================================================
 
@@ -821,11 +929,13 @@ apagarResposta(interaction);
         if (!regex.test(cor)) {
 
             await interaction.reply({
+
                 content:
                     "❌ Informe uma cor HEX válida.\n\n" +
                     "Exemplo: **#57F287**",
 
                 flags: 64
+
             });
 
             apagarResposta(interaction);
@@ -871,10 +981,12 @@ apagarResposta(interaction);
         } catch {
 
             await interaction.reply({
+
                 content:
                     "❌ Informe uma URL válida para a faixa.",
 
                 flags: 64
+
             });
 
             apagarResposta(interaction);
@@ -981,10 +1093,12 @@ apagarResposta(interaction);
         } catch (error) {
 
             await interaction.reply({
+
                 content:
                     `❌ ${error.message}`,
 
                 flags: 64
+
             });
 
             apagarResposta(interaction);
@@ -996,7 +1110,7 @@ apagarResposta(interaction);
     }
 
     // ==================================================
-    // REGISTRO DE MEMBROS
+    // REGISTRO DE INTEGRANTES
     // ==================================================
 
     if (
@@ -1037,11 +1151,13 @@ apagarResposta(interaction);
             );
 
             await interaction.reply({
+
                 content:
                     "✅ Registro realizado com sucesso!\n\n" +
-                    "Bem-vindo ao Padre Nosso MC.",
+                    `Bem-vindo à ${settings.mc.nome}.`,
 
                 flags: 64
+
             });
 
         } catch (error) {
@@ -1052,6 +1168,7 @@ apagarResposta(interaction);
             );
 
             await interaction.reply({
+
                 content:
                     `❌ ${
                         error.message ||
@@ -1059,6 +1176,7 @@ apagarResposta(interaction);
                     }`,
 
                 flags: 64
+
             });
 
         }

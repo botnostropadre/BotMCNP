@@ -1,27 +1,41 @@
-const { EmbedBuilder } = require("discord.js");
-const COLORS = require("../config/colors");
+const {
+    EmbedBuilder
+} = require("discord.js");
 
-function criarFinanceiro(saldo){
+const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
+
+// ======================================================
+// PAINEL FINANCEIRO
+// ======================================================
+
+function criarFinanceiro(saldo) {
 
     return new EmbedBuilder()
 
         .setColor(COLORS.VERDE)
 
-        .setTitle("💰 Caixa do Padre Nosso MC")
+        .setTitle(`💰 Caixa da ${settings.mc.nome}`)
 
         .setDescription(
 
-`# Financeiro
+`# 💵 Financeiro
 
-💵 Saldo Atual
+### Saldo Atual
 
-## R$ ${saldo.toLocaleString("pt-BR")}`
+## ${saldo.toLocaleString(
+    "pt-BR",
+    {
+        style: "currency",
+        currency: "BRL"
+    }
+)}`
 
         )
 
         .setFooter({
 
-            text:"Padre Nosso MC"
+            text: `${settings.mc.nome} • Sistema Financeiro`
 
         })
 
@@ -29,6 +43,12 @@ function criarFinanceiro(saldo){
 
 }
 
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
+
 module.exports = {
-    criarFinanceiro: criarFinanceiro
+
+    criarFinanceiro
+
 };

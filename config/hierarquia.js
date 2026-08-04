@@ -3,45 +3,45 @@ const settings = require("./settings.json");
 module.exports = [
 
     {
-        nome: "Prospect",
-        emoji: "🔰",
-        id: settings.cargos.prospect
+        nome: "Treinamento",
+        emoji: "🎓",
+        id: settings.cargos.treinamento
     },
 
     {
         nome: "Membro",
-        emoji: "🏍",
+        emoji: "🤝",
         id: settings.cargos.membro
     },
 
     {
-        nome: "Secretário",
-        emoji: "📝",
-        id: settings.cargos.secretario
+        nome: "Recrutamento",
+        emoji: "📋",
+        id: settings.cargos.recrutamento
     },
 
     {
-        nome: "Tesouraria",
-        emoji: "💰",
-        id: settings.cargos.tesouraria
+        nome: "Resp. Eventos",
+        emoji: "🎪",
+        id: settings.cargos.respEventos
     },
 
     {
-        nome: "Sargento de Armas",
-        emoji: "🛡️",
-        id: settings.cargos.sargento
-    },
-
-    {
-        nome: "Vice Presidente",
+        nome: "Resp. Elite",
         emoji: "⚔️",
-        id: settings.cargos.vice
+        id: settings.cargos.respElite
     },
 
     {
-        nome: "Presidente",
-        emoji: "🦅",
-        id: settings.cargos.presidente
+        nome: "Gerência",
+        emoji: "💼",
+        id: settings.cargos.gerencia
+    },
+
+    {
+        nome: "Liderança",
+        emoji: "👑",
+        id: settings.cargos.lideranca
     }
 
 ];

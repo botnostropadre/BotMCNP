@@ -2,10 +2,19 @@ const {
     SlashCommandBuilder,
     PermissionFlagsBits,
     ActionRowBuilder,
-    EmbedBuilder
+    EmbedBuilder,
+    MessageFlags
 } = require("discord.js");
 
-const { criarBotaoRegistro } = require("../buttons/registroButton");
+const settings = require("../config/settings.json");
+
+const {
+    criarBotaoRegistro
+} = require("../buttons/registroButton");
+
+// ======================================================
+// COMANDO /SETUP
+// ======================================================
 
 module.exports = {
 
@@ -13,9 +22,13 @@ module.exports = {
 
         .setName("setup")
 
-        .setDescription("Cria o painel de registro.")
+        .setDescription(
+            "Cria o painel de registro."
+        )
 
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.Administrator
+        ),
 
     async execute(interaction) {
 
@@ -23,31 +36,47 @@ module.exports = {
 
             .setColor("#2B2D31")
 
-            .setTitle("🏍 Padre Nosso MC")
+            .setTitle(
+                `💵 ${settings.mc.nome}`
+            )
 
             .setDescription(
-`Bem-vindo ao sistema de registro.
+`Bem-vindo ao sistema de registro da ${settings.mc.nome}.
 
 Clique no botão abaixo para iniciar seu cadastro.
 
-Após preencher o formulário você receberá o cargo **Prospect** automaticamente.`
+Após preencher o formulário, você receberá automaticamente o cargo **Treinamento**.`
             )
 
             .setFooter({
-                text: "Padre Nosso MC"
-            });
+                text:
+                    `${settings.mc.nome} • Sistema de Registro`
+            })
 
-        const row = new ActionRowBuilder()
-            .addComponents(criarBotaoRegistro());
+            .setTimestamp();
+
+        const row =
+            new ActionRowBuilder()
+                .addComponents(
+                    criarBotaoRegistro()
+                );
 
         await interaction.reply({
-            content: "✅ Painel criado.",
-            ephemeral: true
+
+            content:
+                "✅ Painel de registro criado com sucesso.",
+
+            flags:
+                MessageFlags.Ephemeral
+
         });
 
         await interaction.channel.send({
+
             embeds: [embed],
+
             components: [row]
+
         });
 
     }

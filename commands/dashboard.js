@@ -1,74 +1,123 @@
 const {
-
-SlashCommandBuilder,
-PermissionFlagsBits
-
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    MessageFlags
 } = require("discord.js");
 
 const db = require("../database/database");
 
-const { criarDashboard } = require("../embeds/dashboardEmbed");
+const {
+    criarDashboard
+} = require("../embeds/dashboardEmbed");
 
-const { criarDashboardButtons } = require("../buttons/dashboardButtons");
+const {
+    criarDashboardButtons
+} = require("../buttons/dashboardButtons");
+
+// ======================================================
+// COMANDO /DASHBOARD
+// ======================================================
 
 module.exports = {
 
-data: new SlashCommandBuilder()
+    data: new SlashCommandBuilder()
 
-.setName("dashboard")
+        .setName("dashboard")
 
-.setDescription("Painel administrativo")
+        .setDescription(
+            "Abre o painel administrativo da organização."
+        )
 
-.setDefaultMemberPermissions(
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageRoles
+        ),
 
-PermissionFlagsBits.ManageRoles
+    async execute(interaction) {
 
-),
+        db.all(
 
-async execute(interaction){
+            "SELECT cargo FROM membros",
 
-db.all(
+            async (error, rows) => {
 
-"SELECT cargo FROM membros",
+                if (error) {
 
-async (err, rows)=>{
+                    console.error(
+                        "Erro ao carregar o dashboard:",
+                        error
+                    );
 
-if(err) return;
+                    return interaction.reply({
 
-const stats={
+                        content:
+                            "❌ Erro ao carregar o painel administrativo.",
 
-total:rows.length,
+                        flags:
+                            MessageFlags.Ephemeral
 
-prospect:rows.filter(x=>x.cargo==="Prospect").length,
+                    });
 
-membro:rows.filter(x=>x.cargo==="Membro").length,
+                }
 
-diretoria:rows.filter(x=>
+                const integrantes =
+                    rows || [];
 
-["Presidente","Vice","Secretário","Sargento de Armas"]
+                const stats = {
 
-.includes(x.cargo)
+                    total:
+                        integrantes.length,
 
-).length,
+                    prospect:
+                        integrantes.filter(
+                            integrante =>
+                                integrante.cargo ===
+                                "Treinamento"
+                        ).length,
 
-advertencias:0
+                    membro:
+                        integrantes.filter(
+                            integrante =>
+                                integrante.cargo ===
+                                "Membro"
+                        ).length,
 
-};
+                    diretoria:
+                        integrantes.filter(
+                            integrante =>
+                                [
+                                    "Liderança",
+                                    "Gerência",
+                                    "Resp. Elite",
+                                    "Resp. Eventos",
+                                    "Recrutamento"
+                                ].includes(
+                                    integrante.cargo
+                                )
+                        ).length,
 
-await interaction.reply({
+                    advertencias:
+                        0
 
-embeds:[criarDashboard(stats)],
+                };
 
-components:criarDashboardButtons(),
+                await interaction.reply({
 
-ephemeral:true
+                    embeds: [
+                        criarDashboard(stats)
+                    ],
 
-});
+                    components:
+                        criarDashboardButtons(),
 
-}
+                    flags:
+                        MessageFlags.Ephemeral
 
-);
+                });
 
-}
+            }
+
+        );
+
+    }
 
 };

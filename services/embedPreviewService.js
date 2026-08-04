@@ -7,6 +7,7 @@ const {
 } = require("./embedBuilderService");
 
 const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
 
 // ======================================================
 // GERAR EMBED FINAL
@@ -19,7 +20,10 @@ function gerarPreview(userId) {
     if (!editor) return null;
 
     const embed = new EmbedBuilder()
-        .setColor(editor.cor || COLORS.VERDE);
+
+        .setColor(
+            editor.cor || COLORS.VERDE
+        );
 
     // ==================================================
     // TÍTULO
@@ -61,7 +65,7 @@ function gerarPreview(userId) {
     }
 
     // ==================================================
-    // FAIXA INFERIOR
+    // IMAGEM / FAIXA
     // ==================================================
 
     if (editor.faixa?.trim()) {
@@ -79,7 +83,10 @@ function gerarPreview(userId) {
     if (editor.rodape?.trim()) {
 
         embed.setFooter({
-            text: editor.rodape.trim()
+
+            text:
+                editor.rodape.trim()
+
         });
 
     }
@@ -89,7 +96,7 @@ function gerarPreview(userId) {
 }
 
 // ======================================================
-// GERAR INFORMAÇÕES DO PREVIEW
+// GERAR INFORMAÇÕES DA PRÉVIA
 // ======================================================
 
 function gerarInformacoesPreview(
@@ -97,7 +104,8 @@ function gerarInformacoesPreview(
     guild
 ) {
 
-    const editor = obterEditor(userId);
+    const editor =
+        obterEditor(userId);
 
     if (!editor) return null;
 
@@ -109,7 +117,10 @@ function gerarInformacoesPreview(
     let canalTexto =
         "❌ Não selecionado";
 
-    if (editor.canal && guild) {
+    if (
+        editor.canal &&
+        guild
+    ) {
 
         const canal =
             guild.channels.cache.get(
@@ -127,35 +138,37 @@ function gerarInformacoesPreview(
             ? editor.cor.toUpperCase()
             : "Não definida";
 
-    const informacoes =
-        new EmbedBuilder()
+    return new EmbedBuilder()
 
-            .setColor(
-                editor.cor ||
-                COLORS.VERDE
-            )
+        .setColor(
+            editor.cor || COLORS.VERDE
+        )
 
-            .setTitle(
-                "👁 Prévia do Embed"
-            )
+        .setTitle(
+            "👁 Prévia do Embed"
+        )
 
-            .setDescription(
+        .setDescription(
 `Confira abaixo as informações antes de publicar.
 
-📢 **Canal:** ${canalTexto}
+📢 **Canal**
+${canalTexto}
 
-🎨 **Cor:** \`${corTexto}\`
+🎨 **Cor**
+\`${corTexto}\`
 
-➕ **Campos:** ${quantidadeCampos}
+➕ **Campos**
+${quantidadeCampos}
 
-O próximo embed representa exatamente como a publicação será enviada.`
-            )
+O embed abaixo representa exatamente como ele será publicado.`
+        )
 
-            .setFooter({
-                text: "Padre Nosso MC"
-            });
+        .setFooter({
 
-    return informacoes;
+            text:
+                `${settings.mc.nome} • Editor de Embeds`
+
+        });
 
 }
 
@@ -187,20 +200,25 @@ function gerarPreviewCompleto(
     }
 
     return [
+
         informacoes,
+
         preview
+
     ];
 
 }
 
 // ======================================================
-// EXPORTAÇÕES
+// EXPORTAÇÃO
 // ======================================================
 
 module.exports = {
 
     gerarPreview,
+
     gerarInformacoesPreview,
+
     gerarPreviewCompleto
 
 };

@@ -1,6 +1,9 @@
-const { EmbedBuilder } = require("discord.js");
+const {
+    EmbedBuilder
+} = require("discord.js");
 
 const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
 
 const {
     obterEditor
@@ -10,9 +13,13 @@ const {
 // GERAR PAINEL DE STATUS DO EDITOR
 // ======================================================
 
-function gerarStatusEditor(userId, guild) {
+function gerarStatusEditor(
+    userId,
+    guild
+) {
 
-    const editor = obterEditor(userId);
+    const editor =
+        obterEditor(userId);
 
     if (!editor) return null;
 
@@ -36,12 +43,18 @@ function gerarStatusEditor(userId, guild) {
             ? editor.campos.length
             : 0;
 
-    let canalTexto = "❌ Não selecionado";
+    let canalTexto =
+        "❌ Não selecionado";
 
-    if (possuiCanal && guild) {
+    if (
+        possuiCanal &&
+        guild
+    ) {
 
         const canal =
-            guild.channels.cache.get(editor.canal);
+            guild.channels.cache.get(
+                editor.canal
+            );
 
         canalTexto = canal
             ? `${canal}`
@@ -54,46 +67,59 @@ function gerarStatusEditor(userId, guild) {
             ? editor.cor.toUpperCase()
             : "Não definida";
 
-    const embed = new EmbedBuilder()
+    return new EmbedBuilder()
 
-        .setColor(editor.cor || COLORS.VERDE)
+        .setColor(
+            editor.cor || COLORS.VERDE
+        )
 
-        .setTitle("📝 Editor de Embeds")
+        .setTitle(
+            "📝 Editor de Embeds"
+        )
 
         .setDescription(
 `Configure o embed utilizando os botões abaixo.
 
-**Status atual**
+## Status Atual
 
-📝 **Título:** ${possuiTitulo ? "✅ Configurado" : "❌ Não configurado"}
+📝 **Título**
+${possuiTitulo ? "✅ Configurado" : "❌ Não configurado"}
 
-📄 **Descrição:** ${possuiDescricao ? "✅ Configurada" : "❌ Não configurada"}
+📄 **Descrição**
+${possuiDescricao ? "✅ Configurada" : "❌ Não configurada"}
 
-🎨 **Cor:** \`${corTexto}\`
+🎨 **Cor**
+\`${corTexto}\`
 
-📑 **Rodapé:** ${possuiRodape ? "✅ Configurado" : "❌ Não configurado"}
+📑 **Rodapé**
+${possuiRodape ? "✅ Configurado" : "❌ Não configurado"}
 
-🖼 **Faixa:** ${possuiFaixa ? "✅ Configurada" : "❌ Não configurada"}
+🖼 **Faixa**
+${possuiFaixa ? "✅ Configurada" : "❌ Não configurada"}
 
-📢 **Canal:** ${canalTexto}
+📢 **Canal**
+${canalTexto}
 
-➕ **Campos:** ${quantidadeCampos}
+➕ **Campos**
+${quantidadeCampos}
 
-Use **Preview** para conferir o resultado antes de publicar.`
-        )
+Use **Preview** antes de publicar o embed.`)
 
         .setFooter({
-            text: "Padre Nosso MC"
-        });
 
-    return embed;
+            text:
+                `${settings.mc.nome} • Editor de Embeds`
+
+        });
 
 }
 
 // ======================================================
-// EXPORTAÇÕES
+// EXPORTAÇÃO
 // ======================================================
 
 module.exports = {
+
     gerarStatusEditor
+
 };

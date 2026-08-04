@@ -24,9 +24,13 @@ function apagarResposta(interaction) {
     setTimeout(async () => {
 
         try {
+
             await interaction.deleteReply();
+
         } catch {
+
             // A resposta pode já ter sido apagada.
+
         }
 
     }, 10000);
@@ -45,57 +49,106 @@ async function enviarLogRebaixamento({
     motivo
 }) {
 
-    const canalId = "1532120142857769142";
+    const canalId =
+        settings.canais?.rebaixamentos ||
+        "1532120142857769142";
 
-    if (!canalId) return;
+    if (!canalId) {
+
+        console.error(
+            "❌ O canal de rebaixamentos não está configurado."
+        );
+
+        return;
+
+    }
 
     try {
 
-        const canal = await interaction.guild.channels.fetch(canalId);
+        const canal =
+            await interaction.guild.channels
+                .fetch(canalId)
+                .catch(() => null);
 
-        if (!canal || !canal.isTextBased()) return;
+        if (!canal) {
+
+            console.error(
+                "❌ O canal de rebaixamentos não foi encontrado."
+            );
+
+            return;
+
+        }
+
+        if (!canal.isTextBased()) {
+
+            console.error(
+                "❌ O canal de rebaixamentos não aceita mensagens."
+            );
+
+            return;
+
+        }
 
         const embed = new EmbedBuilder()
+
             .setColor(COLORS.VERMELHO)
-            .setTitle("📉 Rebaixamento realizado")
-            .setDescription(
-                `${membro} foi rebaixado dentro da hierarquia do motoclube.`
+
+            .setTitle(
+                "📉 Rebaixamento realizado"
             )
+
+            .setDescription(
+                `${membro} foi rebaixado dentro da hierarquia da ${settings.mc.nome}.`
+            )
+
             .addFields(
+
                 {
                     name: "👤 Integrante",
                     value: `${membro}`,
                     inline: false
                 },
+
                 {
                     name: "🎖 Cargo anterior",
-                    value: `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
+                    value:
+                        `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
                     inline: true
                 },
+
                 {
                     name: "📉 Novo cargo",
-                    value: `${novoCargo.emoji} ${novoCargo.nome}`,
+                    value:
+                        `${novoCargo.emoji} ${novoCargo.nome}`,
                     inline: true
                 },
+
                 {
                     name: "📝 Motivo",
                     value: motivo,
                     inline: false
                 },
+
                 {
                     name: "🛡 Responsável",
                     value: `${interaction.user}`,
                     inline: false
                 }
+
             )
+
             .setThumbnail(
                 membro.user.displayAvatarURL({
                     size: 256
                 })
             )
+
             .setFooter({
-                text: "🇮🇹 Padre Nosso MC"
+                text:
+                    `${settings.mc.nome} • Sistema de Rebaixamentos`
             })
+
             .setTimestamp();
 
         await canal.send({
@@ -120,22 +173,45 @@ async function enviarLogRebaixamento({
 module.exports = {
 
     data: new SlashCommandBuilder()
+
         .setName("rebaixar")
-        .setDescription("Rebaixa um integrante para o cargo anterior")
+
+        .setDescription(
+            "Rebaixa um integrante para o cargo anterior."
+        )
+
         .addUserOption(option =>
+
             option
+
                 .setName("membro")
-                .setDescription("Selecione o integrante que será rebaixado")
+
+                .setDescription(
+                    "Selecione o integrante que será rebaixado."
+                )
+
                 .setRequired(true)
+
         )
+
         .addStringOption(option =>
+
             option
+
                 .setName("motivo")
-                .setDescription("Informe o motivo do rebaixamento")
+
+                .setDescription(
+                    "Informe o motivo do rebaixamento."
+                )
+
                 .setMinLength(3)
+
                 .setMaxLength(500)
+
                 .setRequired(true)
+
         )
+
         .setDefaultMemberPermissions(
             PermissionFlagsBits.ManageRoles
         ),
@@ -148,11 +224,19 @@ module.exports = {
 
         try {
 
-            const membro = interaction.options.getMember("membro");
-            const motivo = interaction.options.getString("motivo", true);
+            const membro =
+                interaction.options.getMember(
+                    "membro"
+                );
+
+            const motivo =
+                interaction.options.getString(
+                    "motivo",
+                    true
+                );
 
             // ==================================================
-            // VALIDAR MEMBRO
+            // VALIDAR INTEGRANTE
             // ==================================================
 
             if (!membro) {
@@ -163,6 +247,7 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
@@ -170,21 +255,28 @@ module.exports = {
             if (membro.user.bot) {
 
                 await interaction.editReply({
-                    content: "❌ Bots não podem ser rebaixados."
+                    content:
+                        "❌ Bots não podem ser rebaixados."
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
 
-            if (membro.id === interaction.user.id) {
+            if (
+                membro.id ===
+                interaction.user.id
+            ) {
 
                 await interaction.editReply({
-                    content: "❌ Você não pode rebaixar a si mesmo."
+                    content:
+                        "❌ Você não pode rebaixar a si mesmo."
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
@@ -193,16 +285,20 @@ module.exports = {
             // BUSCAR CADASTRO
             // ==================================================
 
-            const cadastro = await buscarMembro(membro.id);
+            const cadastro =
+                await buscarMembro(
+                    membro.id
+                );
 
             if (!cadastro) {
 
                 await interaction.editReply({
                     content:
-                        "❌ Esse integrante não está cadastrado no sistema do motoclube."
+                        `❌ Esse integrante não está cadastrado no sistema da ${settings.mc.nome}.`
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
@@ -211,9 +307,14 @@ module.exports = {
             // IDENTIFICAR CARGO ATUAL
             // ==================================================
 
-            const indiceAtual = hierarquia.findIndex(cargo =>
-                cargo.id && membro.roles.cache.has(cargo.id)
-            );
+            const indiceAtual =
+                hierarquia.findIndex(
+                    cargo =>
+                        cargo.id &&
+                        membro.roles.cache.has(
+                            cargo.id
+                        )
+                );
 
             if (indiceAtual === -1) {
 
@@ -223,13 +324,14 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
 
-            const cargoAnterior = hierarquia[indiceAtual];
-
-            // ==================================================
+            const cargoAnterior =
+                hierarquia[indiceAtual];
+                        // ==================================================
             // VALIDAR MENOR CARGO
             // ==================================================
 
@@ -242,11 +344,13 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
 
-            const novoCargo = hierarquia[indiceAtual - 1];
+            const novoCargo =
+                hierarquia[indiceAtual - 1];
 
             // ==================================================
             // VALIDAR CONFIGURAÇÃO
@@ -260,12 +364,15 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
 
             const cargoDiscordNovo =
-                interaction.guild.roles.cache.get(novoCargo.id);
+                interaction.guild.roles.cache.get(
+                    novoCargo.id
+                );
 
             if (!cargoDiscordNovo) {
 
@@ -275,15 +382,22 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
 
-            const botMembro = interaction.guild.members.me;
+            // ==================================================
+            // VALIDAR HIERARQUIA DO BOT
+            // ==================================================
+
+            const botMembro =
+                interaction.guild.members.me;
 
             if (
                 !botMembro ||
-                botMembro.roles.highest.position <= cargoDiscordNovo.position
+                botMembro.roles.highest.position <=
+                cargoDiscordNovo.position
             ) {
 
                 await interaction.editReply({
@@ -293,6 +407,7 @@ module.exports = {
                 });
 
                 apagarResposta(interaction);
+
                 return;
 
             }
@@ -301,15 +416,18 @@ module.exports = {
             // TROCAR CARGOS NO DISCORD
             // ==================================================
 
-            const cargosAtuaisDaHierarquia = hierarquia
-                .map(cargo => cargo.id)
-                .filter(id =>
-                    id &&
-                    membro.roles.cache.has(id) &&
-                    id !== novoCargo.id
-                );
+            const cargosAtuaisDaHierarquia =
+                hierarquia
+                    .map(cargo => cargo.id)
+                    .filter(id =>
+                        id &&
+                        membro.roles.cache.has(id) &&
+                        id !== novoCargo.id
+                    );
 
-            if (cargosAtuaisDaHierarquia.length > 0) {
+            if (
+                cargosAtuaisDaHierarquia.length > 0
+            ) {
 
                 await membro.roles.remove(
                     cargosAtuaisDaHierarquia,
@@ -381,35 +499,64 @@ module.exports = {
             // RESPOSTA
             // ==================================================
 
-            const embedSucesso = new EmbedBuilder()
-                .setColor(COLORS.VERMELHO)
-                .setTitle("📉 Rebaixamento concluído")
-                .setDescription(
-                    `${membro} foi rebaixado com sucesso.`
-                )
-                .addFields(
-                    {
-                        name: "Cargo anterior",
-                        value:
-                            `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
-                        inline: true
-                    },
-                    {
-                        name: "Novo cargo",
-                        value:
-                            `${novoCargo.emoji} ${novoCargo.nome}`,
-                        inline: true
-                    },
-                    {
-                        name: "Motivo",
-                        value: motivo,
-                        inline: false
-                    }
-                )
-                .setFooter({
-                    text: "🇮🇹 Padre Nosso MC"
-                })
-                .setTimestamp();
+            const embedSucesso =
+                new EmbedBuilder()
+
+                    .setColor(
+                        COLORS.VERMELHO
+                    )
+
+                    .setTitle(
+                        "📉 Rebaixamento concluído"
+                    )
+
+                    .setDescription(
+                        `${membro} foi rebaixado com sucesso dentro da ${settings.mc.nome}.`
+                    )
+
+                    .addFields(
+
+                        {
+                            name:
+                                "🎖 Cargo anterior",
+
+                            value:
+                                `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "📉 Novo cargo",
+
+                            value:
+                                `${novoCargo.emoji} ${novoCargo.nome}`,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "📝 Motivo",
+
+                            value:
+                                motivo,
+
+                            inline:
+                                false
+                        }
+
+                    )
+
+                    .setFooter({
+                        text:
+                            `${settings.mc.nome} • Sistema de Rebaixamentos`
+                    })
+
+                    .setTimestamp();
 
             await interaction.editReply({
                 embeds: [embedSucesso]

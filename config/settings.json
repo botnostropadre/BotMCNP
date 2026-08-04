@@ -7,7 +7,6 @@
         "boasVindas": "1530455910689013782",
         "promocoes": "1532120021168291850",
         "rebaixamentos": "1532120142857769142"
-
     },
 
     "paineis": {
@@ -16,20 +15,20 @@
     },
 
     "cargos": {
-        "presidente": "1530456364059721823",
-        "vice": "1530468429008601118",
-        "tesouraria": "1531838445045940296",
-        "sargento": "1530456770382794773",
-        "secretario": "1530457451843813536",
+        "lideranca": "1530456364059721823",
+        "gerencia": "1530468429008601118",
+        "respElite": "1531838445045940296",
+        "respEventos": "1530456770382794773",
+        "recrutamento": "1530457451843813536",
         "membro": "1530458236048642068",
-        "prospect": "1530458943116148896"
+        "treinamento": "1530458943116148896"
     },
 
     "nickname": "{nome} \"{vulgo}\" {sobrenome}",
 
     "mc": {
-        "nome": "Padre Nosso MC",
-        "tag": "PNMC"
+        "nome": "Cosa Nostra",
+        "tag": "CN"
     },
 
     "cores": {

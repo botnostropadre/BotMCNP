@@ -1,10 +1,12 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    EmbedBuilder
+    EmbedBuilder,
+    MessageFlags
 } = require("discord.js");
 
 const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
 
 const {
     criarFarmButton
@@ -24,7 +26,7 @@ module.exports = {
         .setName("setupfarm")
 
         .setDescription(
-            "Cria o painel fixo de registro de farm."
+            "Cria o painel de registro de farm."
         )
 
         .setDefaultMemberPermissions(
@@ -48,7 +50,8 @@ module.exports = {
                 content:
                     "❌ O canal de registro de farm não foi encontrado.",
 
-                flags: 64
+                flags:
+                    MessageFlags.Ephemeral
 
             });
 
@@ -70,24 +73,37 @@ module.exports = {
 
             .setColor(COLORS.VERDE)
 
-            .setTitle("📦 Registro de Farm")
+            .setTitle("📦 Registro de Produção")
 
             .setDescription(
-`Utilize o botão abaixo para registrar seu farm.
+`Bem-vindo ao sistema de controle de produção da **${settings.mc.nome}**.
 
-Você poderá informar:
+Utilize o botão abaixo para registrar sua produção diária.
+
+━━━━━━━━━━━━━━━━━━━━
 
 🧱 **Tijolos**
-Meta semanal: **100 unidades**
+
+Meta semanal:
+**100 unidades**
+
+━━━━━━━━━━━━━━━━━━━━
 
 🔩 **Materiais**
-Meta diária: **200 unidades**
 
-Os dois campos são opcionais, mas pelo menos um deles deve ser preenchido.`
+Meta diária:
+**200 unidades**
+
+━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Pelo menos um dos campos deve ser preenchido para concluir o registro.`
             )
 
             .setFooter({
-                text: "Padre Nosso MC"
+
+                text:
+                    `${settings.mc.nome} • Controle de Produção`
+
             })
 
             .setTimestamp();
@@ -96,16 +112,18 @@ Os dois campos são opcionais, mas pelo menos um deles deve ser preenchido.`
 
             embeds: [embed],
 
-            components: criarFarmButton()
+            components:
+                criarFarmButton()
 
         });
 
         await interaction.reply({
 
             content:
-                `✅ Painel de farm criado em ${canal}.`,
+                `✅ Painel criado com sucesso em ${canal}.`,
 
-            flags: 64
+            flags:
+                MessageFlags.Ephemeral
 
         });
 

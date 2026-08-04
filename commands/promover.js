@@ -27,9 +27,10 @@ function apagarResposta(interaction) {
 
             await interaction.deleteReply();
 
-        } catch (error) {
+        } catch {
 
             // A resposta pode já ter sido apagada.
+
         }
 
     }, 10000);
@@ -47,55 +48,57 @@ async function enviarLogPromocao({
     novoCargo
 }) {
 
-    /*
-     * O código procura o canal de log usando alguns nomes possíveis.
-     * Será utilizado o primeiro ID válido encontrado.
-     */
+    const canalId =
+        settings.canais?.promocoes ||
+        "1532120021168291850";
 
-    const canalId = "1532120021168291850";
-    console.log("Canal configurado:", canalId);
-
-console.log("📈 ID do canal de promoções:", canalId);
-
-if (!canalId) {
-
-    console.error(
-        "❌ O canal de promoções não está configurado no settings.json."
-    );
-
-    return;
-
-}
-
-try {
-
-    const canal = await interaction.guild.channels.fetch(canalId);
-console.log("Canal encontrado:", canal?.name);
     console.log(
-        "📈 Canal de promoções encontrado:",
-        canal?.name,
-        canal?.id
+        "📈 ID do canal de promoções:",
+        canalId
     );
 
-    if (!canal) {
+    if (!canalId) {
 
         console.error(
-            "❌ O canal de promoções não foi encontrado no servidor."
+            "❌ O canal de promoções não está configurado no settings.json."
         );
 
         return;
 
     }
 
-    if (!canal.isTextBased()) {
+    try {
 
-        console.error(
-            "❌ O canal configurado em promoções não aceita mensagens."
+        const canal =
+            await interaction.guild.channels
+                .fetch(canalId)
+                .catch(() => null);
+
+        console.log(
+            "📈 Canal de promoções encontrado:",
+            canal?.name,
+            canal?.id
         );
 
-        return;
+        if (!canal) {
 
-    }
+            console.error(
+                "❌ O canal de promoções não foi encontrado no servidor."
+            );
+
+            return;
+
+        }
+
+        if (!canal.isTextBased()) {
+
+            console.error(
+                "❌ O canal configurado para promoções não aceita mensagens."
+            );
+
+            return;
+
+        }
 
         const embed = new EmbedBuilder()
 
@@ -104,7 +107,7 @@ console.log("Canal encontrado:", canal?.name);
             .setTitle("📈 Promoção realizada")
 
             .setDescription(
-                `${membro} recebeu uma nova promoção dentro do motoclube.`
+                `${membro} recebeu uma nova promoção dentro da ${settings.mc.nome}.`
             )
 
             .addFields(
@@ -117,13 +120,15 @@ console.log("Canal encontrado:", canal?.name);
 
                 {
                     name: "🎖 Cargo anterior",
-                    value: `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
+                    value:
+                        `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
                     inline: true
                 },
 
                 {
                     name: "🏅 Novo cargo",
-                    value: `${novoCargo.emoji} ${novoCargo.nome}`,
+                    value:
+                        `${novoCargo.emoji} ${novoCargo.nome}`,
                     inline: true
                 },
 
@@ -137,27 +142,28 @@ console.log("Canal encontrado:", canal?.name);
 
             .setThumbnail(
                 membro.user.displayAvatarURL({
-                    dynamic: true,
                     size: 256
                 })
             )
 
             .setFooter({
-                text: "🇮🇹 Padre Nosso MC"
+                text:
+                    `${settings.mc.nome} • Sistema de Promoções`
             })
 
             .setTimestamp();
 
-        const mensagemEnviada = await canal.send({
-    embeds: [embed]
-});
-console.log("Mensagem enviada com sucesso.");
-console.log(
-    "✅ Log de promoção enviado:",
-    mensagemEnviada.id,
-    "no canal:",
-    canal.name
-);
+        const mensagemEnviada =
+            await canal.send({
+                embeds: [embed]
+            });
+
+        console.log(
+            "✅ Log de promoção enviado:",
+            mensagemEnviada.id,
+            "no canal:",
+            canal.name
+        );
 
     } catch (error) {
 
@@ -180,7 +186,9 @@ module.exports = {
 
         .setName("promover")
 
-        .setDescription("Promove um integrante para o próximo cargo")
+        .setDescription(
+            "Promove um integrante para o próximo cargo."
+        )
 
         .addUserOption(option =>
 
@@ -188,7 +196,9 @@ module.exports = {
 
                 .setName("membro")
 
-                .setDescription("Selecione o integrante que será promovido")
+                .setDescription(
+                    "Selecione o integrante que será promovido."
+                )
 
                 .setRequired(true)
 
@@ -206,16 +216,20 @@ module.exports = {
 
         try {
 
-            const membro = interaction.options.getMember("membro");
+            const membro =
+                interaction.options.getMember(
+                    "membro"
+                );
 
             // ==================================================
-            // VALIDAR MEMBRO
+            // VALIDAR INTEGRANTE
             // ==================================================
 
             if (!membro) {
 
                 await interaction.editReply({
-                    content: "❌ Não foi possível encontrar esse integrante no servidor."
+                    content:
+                        "❌ Não foi possível encontrar esse integrante no servidor."
                 });
 
                 apagarResposta(interaction);
@@ -227,7 +241,8 @@ module.exports = {
             if (membro.user.bot) {
 
                 await interaction.editReply({
-                    content: "❌ Bots não podem ser promovidos."
+                    content:
+                        "❌ Bots não podem ser promovidos."
                 });
 
                 apagarResposta(interaction);
@@ -236,10 +251,14 @@ module.exports = {
 
             }
 
-            if (membro.id === interaction.user.id) {
+            if (
+                membro.id ===
+                interaction.user.id
+            ) {
 
                 await interaction.editReply({
-                    content: "❌ Você não pode promover a si mesmo."
+                    content:
+                        "❌ Você não pode promover a si mesmo."
                 });
 
                 apagarResposta(interaction);
@@ -247,18 +266,20 @@ module.exports = {
                 return;
 
             }
-
-            // ==================================================
+                       // ==================================================
             // BUSCAR CADASTRO
             // ==================================================
 
-            const cadastro = await buscarMembro(membro.id);
+            const cadastro =
+                await buscarMembro(
+                    membro.id
+                );
 
             if (!cadastro) {
 
                 await interaction.editReply({
                     content:
-                        "❌ Esse integrante ainda não está cadastrado no sistema do motoclube."
+                        `❌ Esse integrante ainda não está cadastrado no sistema da ${settings.mc.nome}.`
                 });
 
                 apagarResposta(interaction);
@@ -271,9 +292,13 @@ module.exports = {
             // IDENTIFICAR CARGO ATUAL
             // ==================================================
 
-            const indiceAtual = hierarquia.findIndex(cargo =>
-                membro.roles.cache.has(cargo.id)
-            );
+            const indiceAtual =
+                hierarquia.findIndex(
+                    cargo =>
+                        membro.roles.cache.has(
+                            cargo.id
+                        )
+                );
 
             if (indiceAtual === -1) {
 
@@ -288,13 +313,17 @@ module.exports = {
 
             }
 
-            const cargoAnterior = hierarquia[indiceAtual];
+            const cargoAnterior =
+                hierarquia[indiceAtual];
 
             // ==================================================
             // VALIDAR ÚLTIMO CARGO
             // ==================================================
 
-            if (indiceAtual === hierarquia.length - 1) {
+            if (
+                indiceAtual ===
+                hierarquia.length - 1
+            ) {
 
                 await interaction.editReply({
                     content:
@@ -308,7 +337,8 @@ module.exports = {
 
             }
 
-            const novoCargo = hierarquia[indiceAtual + 1];
+            const novoCargo =
+                hierarquia[indiceAtual + 1];
 
             // ==================================================
             // VALIDAR CONFIGURAÇÃO
@@ -328,7 +358,9 @@ module.exports = {
             }
 
             const cargoDiscordNovo =
-                interaction.guild.roles.cache.get(novoCargo.id);
+                interaction.guild.roles.cache.get(
+                    novoCargo.id
+                );
 
             if (!cargoDiscordNovo) {
 
@@ -347,11 +379,13 @@ module.exports = {
             // VALIDAR HIERARQUIA DO BOT
             // ==================================================
 
-            const botMembro = interaction.guild.members.me;
+            const botMembro =
+                interaction.guild.members.me;
 
             if (
                 !botMembro ||
-                botMembro.roles.highest.position <= cargoDiscordNovo.position
+                botMembro.roles.highest.position <=
+                cargoDiscordNovo.position
             ) {
 
                 await interaction.editReply({
@@ -370,15 +404,18 @@ module.exports = {
             // TROCAR CARGOS NO DISCORD
             // ==================================================
 
-            const cargosDaHierarquia = hierarquia
-                .map(cargo => cargo.id)
-                .filter(id =>
-                    id &&
-                    membro.roles.cache.has(id) &&
-                    id !== novoCargo.id
-                );
+            const cargosDaHierarquia =
+                hierarquia
+                    .map(cargo => cargo.id)
+                    .filter(id =>
+                        id &&
+                        membro.roles.cache.has(id) &&
+                        id !== novoCargo.id
+                    );
 
-            if (cargosDaHierarquia.length > 0) {
+            if (
+                cargosDaHierarquia.length > 0
+            ) {
 
                 await membro.roles.remove(
                     cargosDaHierarquia,
@@ -409,16 +446,15 @@ module.exports = {
 
             } catch (databaseError) {
 
-                /*
-                 * Caso o Discord seja atualizado, mas o banco falhe,
-                 * tenta restaurar o cargo anterior.
-                 */
-
                 try {
 
-                    await membro.roles.remove(novoCargo.id);
+                    await membro.roles.remove(
+                        novoCargo.id
+                    );
 
-                    await membro.roles.add(cargoAnterior.id);
+                    await membro.roles.add(
+                        cargoAnterior.id
+                    );
 
                 } catch (rollbackError) {
 
@@ -437,55 +473,64 @@ module.exports = {
             // LOG
             // ==================================================
 
-            console.log("========== PROMOÇÃO ==========");
-console.log("Entrou na função de log.");
-
-await enviarLogPromocao({
-    interaction,
-    membro,
-    cargoAnterior,
-    novoCargo
-});
-
-console.log("Saiu da função de log.");
+            await enviarLogPromocao({
+                interaction,
+                membro,
+                cargoAnterior,
+                novoCargo
+            });
 
             // ==================================================
             // RESPOSTA
             // ==================================================
 
-            const embedSucesso = new EmbedBuilder()
+            const embedSucesso =
+                new EmbedBuilder()
 
-                .setColor(COLORS.VERDE)
+                    .setColor(
+                        COLORS.VERDE
+                    )
 
-                .setTitle("✅ Promoção concluída")
+                    .setTitle(
+                        "✅ Promoção concluída"
+                    )
 
-                .setDescription(
-                    `${membro} foi promovido com sucesso.`
-                )
+                    .setDescription(
+                        `${membro} foi promovido com sucesso dentro da ${settings.mc.nome}.`
+                    )
 
-                .addFields(
+                    .addFields(
 
-                    {
-                        name: "Cargo anterior",
-                        value:
-                            `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
-                        inline: true
-                    },
+                        {
+                            name:
+                                "🎖 Cargo anterior",
 
-                    {
-                        name: "Novo cargo",
-                        value:
-                            `${novoCargo.emoji} ${novoCargo.nome}`,
-                        inline: true
-                    }
+                            value:
+                                `${cargoAnterior.emoji} ${cargoAnterior.nome}`,
 
-                )
+                            inline:
+                                true
+                        },
 
-                .setFooter({
-                    text: "🇮🇹 Padre Nosso MC"
-                })
+                        {
+                            name:
+                                "🏅 Novo cargo",
 
-                .setTimestamp();
+                            value:
+                                `${novoCargo.emoji} ${novoCargo.nome}`,
+
+                            inline:
+                                true
+                        }
+
+                    )
+
+                    .setFooter({
+                        text:
+                            `${settings.mc.nome} • Sistema de Promoções`
+                    })
+
+                    .setTimestamp();
 
             await interaction.editReply({
                 embeds: [embedSucesso]

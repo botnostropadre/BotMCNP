@@ -1,39 +1,108 @@
-const { alterarCargo } = require("../services/cargoService");
+const {
+    alterarCargo
+} = require("../services/cargoService");
+
+// ======================================================
+// MENU DE REBAIXAMENTO
+// ======================================================
 
 async function handleRebaixarMenu(interaction) {
 
     if (!interaction.isStringSelectMenu()) return;
 
-    if (!interaction.customId.startsWith("rebaixar_")) return;
+    if (
+        !interaction.customId.startsWith(
+            "rebaixar_"
+        )
+    ) {
 
-    const membroId = interaction.customId.split("_")[1];
+        return;
 
-    const membro = await interaction.guild.members.fetch(membroId);
+    }
 
-    const cargoSelecionado = interaction.values[0];
+    try {
 
-    const nomeCargo = await alterarCargo(
+        const membroId =
+            interaction.customId.split("_")[1];
 
-        interaction,
+        const membro =
+            await interaction.guild.members
+                .fetch(membroId)
+                .catch(() => null);
 
-        membro,
+        if (!membro) {
 
-        cargoSelecionado,
+            await interaction.update({
 
-        "Rebaixamento"
+                content:
+                    "❌ Não foi possível localizar esse integrante no servidor.",
 
-    );
+                components: []
 
-    await interaction.update({
+            });
 
-        content: `⬇️ ${membro} rebaixado para **${nomeCargo}**.`,
+            return;
 
-        components: []
+        }
 
-    });
+        const cargoSelecionado =
+            interaction.values[0];
+
+        const nomeCargo =
+            await alterarCargo(
+
+                interaction,
+
+                membro,
+
+                cargoSelecionado,
+
+                "Rebaixamento"
+
+            );
+
+        await interaction.update({
+
+            content:
+                `⬇️ ${membro} foi rebaixado para **${nomeCargo}**.`,
+
+            components: []
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao processar menu de rebaixamento:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Não foi possível concluir o rebaixamento.",
+
+                components: []
+
+            }).catch(() => {});
+
+        }
+
+    }
 
 }
 
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
+
 module.exports = {
+
     handleRebaixarMenu
+
 };

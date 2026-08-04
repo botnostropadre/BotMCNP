@@ -10,6 +10,8 @@ const {
 const fs = require("fs");
 const path = require("path");
 
+const settings = require("./config/settings.json");
+
 require("./database/database");
 
 const {
@@ -129,7 +131,7 @@ client.once("ready", () => {
     );
 
     console.log(
-        "🏍 PADRE NOSSO MC"
+        `💵 ${settings.mc.nome.toUpperCase()}`
     );
 
     console.log(
@@ -152,7 +154,7 @@ client.once("ready", () => {
 
         activities: [
             {
-                name: "Padre Nosso MC",
+                name: settings.mc.nome,
                 type: ActivityType.Watching
             }
         ],
@@ -370,10 +372,13 @@ client.on(
                 }ms quando ocorreu o erro.`
             );
 
-            if (error.code === 10062) {
+            if (
+                error.code === 10062 ||
+                error.code === 40060
+            ) {
 
                 console.error(
-                    "❌ Interação expirada ou respondida por outra instância."
+                    "❌ Interação expirada ou já respondida por outra instância."
                 );
 
                 return;

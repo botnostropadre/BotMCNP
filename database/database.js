@@ -184,7 +184,7 @@ async function iniciarBanco() {
                 sobrenome TEXT,
                 nomeCompleto TEXT,
 
-                secretario TEXT,
+                recrutador TEXT,
 
                 cargo TEXT,
 
@@ -234,7 +234,7 @@ async function iniciarBanco() {
         await garantirColuna(
             "membros",
             "cargo",
-            "TEXT DEFAULT 'Prospect'"
+            "TEXT DEFAULT 'Treinamento'"
         );
 
         await garantirColuna(

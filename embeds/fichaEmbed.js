@@ -1,21 +1,38 @@
-const { EmbedBuilder } = require("discord.js");
-const COLORS = require("../config/colors");
+const {
+    EmbedBuilder
+} = require("discord.js");
 
-function criarFicha(usuario, dados, advertencias = 0) {
+const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
+
+// ======================================================
+// FICHA DO INTEGRANTE
+// ======================================================
+
+function criarFicha(
+    usuario,
+    dados,
+    advertencias = 0
+) {
 
     return new EmbedBuilder()
 
         .setColor(COLORS.VERDE)
 
-        .setTitle("📋 Ficha do Integrante")
+        .setTitle("📋 Perfil do Integrante")
 
         .setDescription(
 `━━━━━━━━━━━━━━━━━━━━━━
-**Padre Nosso MC**
+**${settings.mc.nome}**
 ━━━━━━━━━━━━━━━━━━━━━━`
         )
 
-        .setThumbnail(usuario.displayAvatarURL({ dynamic: true }))
+        .setThumbnail(
+            usuario.displayAvatarURL({
+                dynamic: true,
+                size: 256
+            })
+        )
 
         .addFields(
 
@@ -32,38 +49,38 @@ function criarFicha(usuario, dados, advertencias = 0) {
             },
 
             {
-                name: "📝 Secretário",
+                name: "📋 Recrutador",
                 value: dados.secretario,
                 inline: true
             },
 
             {
-                name: "📅 Registro",
+                name: "📅 Data de Registro",
                 value: dados.dataRegistro,
                 inline: false
             },
 
             {
-                name: "⚠ Advertências",
+                name: "⚠️ Advertências",
                 value: `${advertencias}`,
                 inline: true
             },
 
             {
                 name: "📈 Promoções",
-                value: "0",
+                value: `${dados.promocoes ?? 0}`,
                 inline: true
             },
 
             {
                 name: "📉 Rebaixamentos",
-                value: "0",
+                value: `${dados.rebaixamentos ?? 0}`,
                 inline: true
             },
 
             {
                 name: "📌 Status",
-                value: "🟢 Ativo",
+                value: dados.status || "🟢 Ativo",
                 inline: true
             },
 
@@ -77,13 +94,17 @@ function criarFicha(usuario, dados, advertencias = 0) {
 
         .setFooter({
 
-            text: "🇮🇹 Padre Nosso MC"
+            text: `${settings.mc.nome} • Sistema de Gestão`
 
         })
 
         .setTimestamp();
 
 }
+
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
 
 module.exports = {
 

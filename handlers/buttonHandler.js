@@ -3,6 +3,7 @@ const {
 } = require("discord.js");
 
 const COLORS = require("../config/colors");
+const settings = require("../config/settings.json");
 
 const {
     criarCategoriaFinanceira
@@ -125,13 +126,18 @@ async function handleButton(interaction) {
 
             .setDescription(
                 "Selecione abaixo a categoria da entrada."
-            );
+            )
+
+            .setFooter({
+                text: settings.mc.nome
+            });
 
         await interaction.reply({
 
             embeds: [embed],
 
-            components: criarCategoriaFinanceira("entrada"),
+            components:
+                criarCategoriaFinanceira("entrada"),
 
             flags: 64
 
@@ -157,13 +163,18 @@ async function handleButton(interaction) {
 
             .setDescription(
                 "Selecione abaixo a categoria da saída."
-            );
+            )
+
+            .setFooter({
+                text: settings.mc.nome
+            });
 
         await interaction.reply({
 
             embeds: [embed],
 
-            components: criarCategoriaFinanceira("saida"),
+            components:
+                criarCategoriaFinanceira("saida"),
 
             flags: 64
 
@@ -209,7 +220,8 @@ async function handleButton(interaction) {
 
             embeds: [embed],
 
-            components: criarEditorButtons(),
+            components:
+                criarEditorButtons(),
 
             flags: 64
 
@@ -257,13 +269,18 @@ async function handleButton(interaction) {
 
             .setDescription(
                 "Escolha abaixo o que deseja editar."
-            );
+            )
+
+            .setFooter({
+                text: settings.mc.nome
+            });
 
         await interaction.reply({
 
             embeds: [embed],
 
-            components: criarVisualMenu(),
+            components:
+                criarVisualMenu(),
 
             flags: 64
 
@@ -289,13 +306,18 @@ async function handleButton(interaction) {
 
             .setDescription(
                 "Escolha abaixo qual imagem deseja configurar."
-            );
+            )
+
+            .setFooter({
+                text: settings.mc.nome
+            });
 
         await interaction.reply({
 
             embeds: [embed],
 
-            components: criarImagemMenu(),
+            components:
+                criarImagemMenu(),
 
             flags: 64
 
@@ -321,13 +343,18 @@ async function handleButton(interaction) {
 
             .setDescription(
                 "Escolha o canal onde o embed será publicado."
-            );
+            )
+
+            .setFooter({
+                text: settings.mc.nome
+            });
 
         await interaction.reply({
 
             embeds: [embed],
 
-            components: criarCanalMenu(),
+            components:
+                criarCanalMenu(),
 
             flags: 64
 
@@ -382,7 +409,8 @@ async function handleButton(interaction) {
 
         await interaction.reply({
 
-            embeds: previewCompleto,
+            embeds:
+                previewCompleto,
 
             flags: 64
 
@@ -441,22 +469,24 @@ async function handleButton(interaction) {
 
     if (interaction.customId === "embed_cancelar") {
 
-        removerEditor(interaction.user.id);
+        removerEditor(
+            interaction.user.id
+        );
 
         const embed = new EmbedBuilder()
 
             .setColor(COLORS.VERMELHO)
 
-            .setTitle("❌ Editor cancelado")
+            .setTitle(
+                "❌ Editor cancelado"
+            )
 
             .setDescription(
                 "Toda a edição do embed foi descartada."
             )
 
             .setFooter({
-
-                text: "Padre Nosso MC"
-
+                text: settings.mc.nome
             })
 
             .setTimestamp();
@@ -478,7 +508,5 @@ async function handleButton(interaction) {
 }
 
 module.exports = {
-
     handleButton
-
 };
