@@ -25,12 +25,12 @@ module.exports = {
 
             .setColor("#2ECC71")
 
-            .setTitle("🏍 Padre Nosso MC")
+            .setTitle("Cosa Nostra")
 
             .setDescription("### Sistema Administrativo\n\nEscolha uma opção abaixo.")
 
             .setFooter({
-                text: "Padre Nosso MC"
+                text: "Cosa Nostra"
             });
 
         const row1 = new ActionRowBuilder()

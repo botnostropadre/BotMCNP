@@ -1,7 +1,7 @@
 {
   "name": "botmcnp",
   "version": "1.0.0",
-  "description": "Bot de gerenciamento do Padre Nosso MC",
+  "description": "Bot de gerenciamento do Cosa Nostra",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
