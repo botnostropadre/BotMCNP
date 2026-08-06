@@ -120,7 +120,7 @@ for (const file of commandFiles) {
 // BOT PRONTO
 // ======================================================
 
-client.once("ready", () => {
+client.once("clientReady", () => {
 
     setClient(client);
 

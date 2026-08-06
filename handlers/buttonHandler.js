@@ -1,5 +1,6 @@
 const {
-    EmbedBuilder
+    EmbedBuilder,
+    MessageFlags
 } = require("discord.js");
 
 const COLORS = require("../config/colors");
@@ -16,6 +17,27 @@ const {
 const {
     criarFarmModal
 } = require("../modals/farmModal");
+
+const {
+    criarEventoPrincipalModal
+} = require("../modals/eventoPrincipalModal");
+
+const {
+    criarEventoConfiguracaoModal
+} = require("../modals/eventoConfiguracaoModal");
+
+const {
+    removerRascunhoEvento
+} = require("../services/eventoBuilderService");
+
+const {
+    adicionarParticipante,
+    removerParticipante
+} = require("../services/eventoService");
+
+const {
+    atualizarEvento
+} = require("../services/atualizarEvento");
 
 const {
     criarEditorButtons
@@ -62,11 +84,33 @@ const {
     publicarEmbed
 } = require("../services/publicarEmbedService");
 
+const {
+    criarParceiroPrincipalModal
+} = require("../modals/parceiroPrincipalModal");
+
+const {
+    criarParceiroResponsaveisModal
+} = require("../modals/parceiroResponsaveisModal");
+
+const {
+    criarParceiroProdutosModal
+} = require("../modals/parceiroProdutosModal");
+
+const {
+    removerRascunhoParceiro
+} = require("../services/parceiroBuilderService");
+
+const {
+    criarParceiroProdutoExtraModal
+} = require("../modals/parceiroProdutoExtraModal");
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
 
-function apagarResposta(interaction, tempo = 10000) {
+function apagarResposta(
+    interaction,
+    tempo = 10000
+) {
 
     setTimeout(async () => {
 
@@ -89,10 +133,390 @@ async function handleButton(interaction) {
     if (!interaction.isButton()) return;
 
     // ==================================================
+    // CRIAR EVENTO
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_criar"
+    ) {
+
+        return interaction.showModal(
+            criarEventoPrincipalModal()
+        );
+
+    }
+
+    // ==================================================
+    // CONTINUAR CRIAÇÃO DO EVENTO
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_continuar"
+    ) {
+
+        return interaction.showModal(
+            criarEventoConfiguracaoModal()
+        );
+
+    }
+
+    // ==================================================
+    // CANCELAR CRIAÇÃO DO EVENTO
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_cancelar_criacao"
+    ) {
+
+        removerRascunhoEvento(
+            interaction.user.id
+        );
+
+        await interaction.update({
+
+            content:
+                "✅ Criação do evento cancelada.",
+
+            embeds: [],
+
+            components: []
+
+        });
+
+        return;
+
+    }
+
+    // ==================================================
+    // PARTICIPAR DA EQUIPE DO EVENTO
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_participar"
+    ) {
+
+        try {
+
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            const mensagemId =
+                interaction.message.id;
+
+            const nomeExibicao =
+                interaction.member?.displayName ||
+                interaction.user.globalName ||
+                interaction.user.username;
+
+            const resultado =
+                await adicionarParticipante({
+
+                    mensagemId,
+
+                    discordId:
+                        interaction.user.id,
+
+                    nome:
+                        nomeExibicao
+
+                });
+
+            if (
+                resultado.status ===
+                "ja_inscrito"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "⚠️ Você já está inscrito na equipe deste evento."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            if (
+                resultado.status ===
+                "lotado"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ A equipe e as vagas de reserva deste evento já estão completas."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            await atualizarEvento(
+                interaction,
+                mensagemId
+            );
+
+            const mensagemSucesso =
+                resultado.status ===
+                "auxiliar"
+                    ? "✅ Você entrou como **Auxiliar da Equipe**."
+                    : "🟡 Você entrou como **Reserva da Equipe**.";
+
+            await interaction.editReply({
+
+                content:
+                    `${mensagemSucesso}\n\n` +
+                    `📌 Sua posição na lista: **${resultado.ordem}**`
+
+            });
+
+            apagarResposta(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao participar do evento:",
+                error
+            );
+
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Não foi possível registrar sua participação neste evento."
+
+                }).catch(() => {});
+
+            } else {
+
+                await interaction.reply({
+
+                    content:
+                        "❌ Não foi possível registrar sua participação neste evento.",
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                }).catch(() => {});
+
+            }
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
+
+    // ==================================================
+    // SAIR DA EQUIPE DO EVENTO
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_sair"
+    ) {
+
+        try {
+
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral
+            });
+
+            const mensagemId =
+                interaction.message.id;
+
+            const resultado =
+                await removerParticipante(
+                    mensagemId,
+                    interaction.user.id
+                );
+
+            if (
+                resultado.status ===
+                "nao_inscrito"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "⚠️ Você não está inscrito na equipe deste evento."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            await atualizarEvento(
+                interaction,
+                mensagemId
+            );
+
+            await interaction.editReply({
+
+                content:
+                    "✅ Você saiu da equipe deste evento."
+
+            });
+
+            apagarResposta(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao sair do evento:",
+                error
+            );
+
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Não foi possível remover sua participação neste evento."
+
+                }).catch(() => {});
+
+            } else {
+
+                await interaction.reply({
+
+                    content:
+                        "❌ Não foi possível remover sua participação neste evento.",
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                }).catch(() => {});
+
+            }
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
+   // ==================================================
+// REGISTRAR PARCEIRO
+// ==================================================
+
+if (
+    interaction.customId ===
+    "parceiro_criar"
+) {
+
+    return interaction.showModal(
+        criarParceiroPrincipalModal()
+    );
+
+}
+
+// ==================================================
+// CONTINUAR RESPONSÁVEIS
+// ==================================================
+
+if (
+    interaction.customId ===
+    "parceiro_continuar_responsaveis"
+) {
+
+    return interaction.showModal(
+        criarParceiroResponsaveisModal()
+    );
+
+}
+
+// ==================================================
+// CONTINUAR PRODUTOS
+// ==================================================
+
+if (
+    interaction.customId ===
+    "parceiro_continuar_produtos"
+) {
+
+    return interaction.showModal(
+        criarParceiroProdutosModal()
+    );
+
+}
+
+// ==================================================
+// CONTINUAR PARA PRODUTO EXTRA
+// ==================================================
+
+if (
+    interaction.customId ===
+    "parceiro_continuar_produto_extra"
+) {
+
+    return interaction.showModal(
+        criarParceiroProdutoExtraModal()
+    );
+
+}
+
+// ==================================================
+// CANCELAR CADASTRO
+// ==================================================
+
+if (
+    interaction.customId ===
+    "parceiro_cancelar"
+) {
+
+    removerRascunhoParceiro(
+        interaction.user.id
+    );
+
+    await interaction.update({
+
+        content:
+            "✅ Cadastro de parceiro cancelado.",
+
+        embeds: [],
+
+        components: []
+
+    });
+
+    return;
+
+}
+    // ==================================================
     // REGISTRAR FARM
     // ==================================================
 
-    if (interaction.customId === "farm_registrar") {
+    if (
+        interaction.customId ===
+        "farm_registrar"
+    ) {
 
         return interaction.showModal(
             criarFarmModal()
@@ -104,7 +528,10 @@ async function handleButton(interaction) {
     // REGISTRO
     // ==================================================
 
-    if (interaction.customId === "registro") {
+    if (
+        interaction.customId ===
+        "registro"
+    ) {
 
         return interaction.showModal(
             criarModalRegistro()
@@ -116,7 +543,10 @@ async function handleButton(interaction) {
     // ENTRADA FINANCEIRA
     // ==================================================
 
-    if (interaction.customId === "financeiro_entrada") {
+    if (
+        interaction.customId ===
+        "financeiro_entrada"
+    ) {
 
         const embed = new EmbedBuilder()
 
@@ -153,7 +583,10 @@ async function handleButton(interaction) {
     // SAÍDA FINANCEIRA
     // ==================================================
 
-    if (interaction.customId === "financeiro_saida") {
+    if (
+        interaction.customId ===
+        "financeiro_saida"
+    ) {
 
         const embed = new EmbedBuilder()
 
@@ -190,14 +623,20 @@ async function handleButton(interaction) {
     // INICIAR EDITOR DE EMBEDS
     // ==================================================
 
-    if (interaction.customId === "embed_novo") {
+    if (
+        interaction.customId ===
+        "embed_novo"
+    ) {
 
-        criarEditor(interaction.user.id);
-
-        const embed = gerarStatusEditor(
-            interaction.user.id,
-            interaction.guild
+        criarEditor(
+            interaction.user.id
         );
+
+        const embed =
+            gerarStatusEditor(
+                interaction.user.id,
+                interaction.guild
+            );
 
         if (!embed) {
 
@@ -230,12 +669,14 @@ async function handleButton(interaction) {
         return;
 
     }
-
     // ==================================================
     // EDITAR TÍTULO
     // ==================================================
 
-    if (interaction.customId === "embed_titulo") {
+    if (
+        interaction.customId ===
+        "embed_titulo"
+    ) {
 
         return interaction.showModal(
             criarModalTitulo()
@@ -247,14 +688,16 @@ async function handleButton(interaction) {
     // EDITAR DESCRIÇÃO
     // ==================================================
 
-    if (interaction.customId === "embed_descricao") {
+    if (
+        interaction.customId ===
+        "embed_descricao"
+    ) {
 
         return interaction.showModal(
             criarModalDescricao()
         );
 
     }
-
     // ==================================================
     // EDITAR VISUAL
     // ==================================================

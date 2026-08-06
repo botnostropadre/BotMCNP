@@ -1,4 +1,13 @@
-const { registrar } = require("../services/registroService");
+const {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    MessageFlags
+} = require("discord.js");
+
+const {
+    registrar
+} = require("../services/registroService");
 
 const COLORS = require("../config/colors");
 const settings = require("../config/settings.json");
@@ -25,6 +34,50 @@ const {
     criarEditorButtons
 } = require("../buttons/embedEditorButtons");
 
+const {
+    handleParceiroPrincipal
+} = require("./parceiros/handleParceiroPrincipal");
+
+const {
+    handleParceiroResponsaveis
+} = require("./parceiros/handleParceiroResponsaveis");
+
+const {
+    handleParceiroProdutos
+} = require("./parceiros/handleParceiroProdutos");
+
+const {
+    handleParceiroFinalizar
+} = require("./parceiros/handleParceiroFinalizar");
+
+// ======================================================
+// SISTEMA DE EVENTOS
+// ======================================================
+
+const {
+    criarRascunhoEvento,
+    obterRascunhoEvento,
+    removerRascunhoEvento
+} = require("../services/eventoBuilderService");
+
+const {
+    salvarEvento
+} = require("../services/eventoService");
+
+const {
+    criarEventoEmbed
+} = require("../embeds/eventoEmbed");
+
+const {
+    criarEventoParticipacaoButtons
+} = require("../buttons/eventoParticipacaoButtons");
+
+// ======================================================
+// SISTEMA DE PARCEIROS
+// ======================================================
+
+
+
 // ======================================================
 // SISTEMA DE FARM
 // ======================================================
@@ -43,7 +96,10 @@ const {
 // APAGAR RESPOSTA APÓS 10 SEGUNDOS
 // ======================================================
 
-function apagarResposta(interaction) {
+function apagarResposta(
+    interaction,
+    tempo = 10000
+) {
 
     setTimeout(async () => {
 
@@ -57,7 +113,7 @@ function apagarResposta(interaction) {
 
         }
 
-    }, 10000);
+    }, tempo);
 
 }
 
@@ -65,7 +121,10 @@ function apagarResposta(interaction) {
 // APAGAR MENSAGEM TEMPORÁRIA
 // ======================================================
 
-function apagarMensagem(mensagem, tempo = 10000) {
+function apagarMensagem(
+    mensagem,
+    tempo = 10000
+) {
 
     setTimeout(async () => {
 
@@ -100,9 +159,13 @@ async function atualizarPainelEditor(
     if (!painel) {
 
         await interaction.reply({
+
             content:
                 "❌ Nenhum editor de embed foi encontrado.",
-            flags: 64
+
+            flags:
+                MessageFlags.Ephemeral
+
         });
 
         apagarResposta(interaction);
@@ -119,29 +182,45 @@ async function atualizarPainelEditor(
     if (interaction.message) {
 
         await interaction.update({
+
             embeds: [painel],
-            components: criarEditorButtons()
+
+            components:
+                criarEditorButtons()
+
         });
 
     } else {
 
         await interaction.reply({
+
             embeds: [painel],
-            components: criarEditorButtons(),
-            flags: 64
+
+            components:
+                criarEditorButtons(),
+
+            flags:
+                MessageFlags.Ephemeral
+
         });
 
     }
 
-    const confirmacao = await interaction.followUp({
-        content: mensagemSucesso,
-        flags: 64
-    });
+    const confirmacao =
+        await interaction.followUp({
+
+            content:
+                mensagemSucesso,
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
 
     apagarMensagem(confirmacao);
 
 }
-
+    
 // ======================================================
 // HANDLER DE MODAIS
 // ======================================================
@@ -150,6 +229,457 @@ async function handleModal(interaction) {
 
     if (!interaction.isModalSubmit()) return;
 
+        // ==================================================
+    // SISTEMA DE PARCEIROS
+    // ==================================================
+
+    if (
+        await handleParceiroPrincipal(
+            interaction
+        )
+    ) {
+
+        return;
+
+    }
+
+    if (
+        await handleParceiroResponsaveis(
+            interaction
+        )
+    ) {
+
+        return;
+
+    }
+
+    if (
+        await handleParceiroProdutos(
+            interaction
+        )
+    ) {
+
+        return;
+
+    }
+
+    if (
+        await handleParceiroFinalizar(
+            interaction
+        )
+    ) {
+
+        return;
+
+    }
+
+    // ==================================================
+    // EVENTO — PRIMEIRA ETAPA
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_modal_principal"
+    ) {
+
+        const nome =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_nome"
+                )
+                .trim();
+
+        const descricao =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_descricao"
+                )
+                .trim();
+
+        const dataHora =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_data_hora"
+                )
+                .trim();
+
+        const traje =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_traje"
+                )
+                .trim();
+
+        const responsavel =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_responsavel"
+                )
+                .trim();
+
+        try {
+
+            criarRascunhoEvento(
+                interaction.user.id,
+                {
+                    nome,
+                    descricao,
+                    dataHora,
+                    traje,
+                    responsavel
+                }
+            );
+
+            const botoes =
+                new ActionRowBuilder()
+
+                    .addComponents(
+
+                        new ButtonBuilder()
+
+                            .setCustomId(
+                                "evento_continuar"
+                            )
+
+                            .setLabel(
+                                "Continuar Configuração"
+                            )
+
+                            .setEmoji("➡️")
+
+                            .setStyle(
+                                ButtonStyle.Success
+                            ),
+
+                        new ButtonBuilder()
+
+                            .setCustomId(
+                                "evento_cancelar_criacao"
+                            )
+
+                            .setLabel(
+                                "Cancelar"
+                            )
+
+                            .setEmoji("❌")
+
+                            .setStyle(
+                                ButtonStyle.Danger
+                            )
+
+                    );
+
+            await interaction.reply({
+
+                content:
+`✅ Informações principais salvas.
+
+**Evento:** ${nome}
+
+Clique em **Continuar Configuração** para informar:
+
+👥 Quantidade de auxiliares  
+🖼️ Flyer do evento`,
+
+                components:
+                    [botoes],
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao salvar primeira etapa do evento:",
+                error
+            );
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível salvar as informações do evento.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
+    // ==================================================
+    // EVENTO — SEGUNDA ETAPA
+    // ==================================================
+
+    if (
+        interaction.customId ===
+        "evento_modal_configuracao"
+    ) {
+
+        const quantidadeTexto =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_quantidade"
+                )
+                .trim();
+
+        const flyer =
+            interaction.fields
+                .getTextInputValue(
+                    "evento_flyer"
+                )
+                .trim();
+
+        const quantidadeAuxiliares =
+            Number(quantidadeTexto);
+
+        if (
+            !Number.isInteger(quantidadeAuxiliares) ||
+            quantidadeAuxiliares < 1 ||
+            quantidadeAuxiliares > 50
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ A quantidade de auxiliares deve ser um número inteiro entre 1 e 50.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        try {
+
+            const urlFlyer =
+                new URL(flyer);
+
+            if (
+                ![
+                    "http:",
+                    "https:"
+                ].includes(urlFlyer.protocol)
+            ) {
+
+                throw new Error(
+                    "URL inválida."
+                );
+
+            }
+
+        } catch {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Informe uma URL válida para o flyer.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        const rascunho =
+            obterRascunhoEvento(
+                interaction.user.id
+            );
+
+        if (!rascunho) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ O rascunho do evento expirou ou não foi encontrado.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        const CANAL_EVENTOS =
+            "1534336370460332093";
+
+        try {
+
+            await interaction.deferReply({
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            const canalEventos =
+                interaction.guild.channels.cache.get(
+                    CANAL_EVENTOS
+                ) ||
+                await interaction.guild.channels
+                    .fetch(CANAL_EVENTOS)
+                    .catch(() => null);
+
+            if (
+                !canalEventos ||
+                !canalEventos.isTextBased()
+            ) {
+
+                throw new Error(
+                    "O canal de eventos não foi encontrado."
+                );
+
+            }
+
+            const dadosEvento = {
+
+                nome:
+                    rascunho.nome,
+
+                descricao:
+                    rascunho.descricao,
+
+                dataHora:
+                    rascunho.dataHora,
+
+                traje:
+                    rascunho.traje,
+
+                responsavel:
+                    rascunho.responsavel,
+
+                quantidadeAuxiliares,
+
+                flyer,
+
+                criadoPor:
+                    interaction.user.id,
+
+                dataCriacao:
+                    new Date().toLocaleString(
+                        "pt-BR"
+                    )
+
+            };
+
+            const mensagemEvento =
+                await canalEventos.send({
+
+                    embeds: [
+
+                        criarEventoEmbed({
+
+                            evento:
+                                dadosEvento,
+
+                            auxiliares:
+                                [],
+
+                            reservas:
+                                []
+
+                        })
+
+                    ],
+
+                    components:
+                        criarEventoParticipacaoButtons()
+
+                });
+
+            await salvarEvento({
+
+                ...dadosEvento,
+
+                mensagemId:
+                    mensagemEvento.id
+
+            });
+
+            removerRascunhoEvento(
+                interaction.user.id
+            );
+
+            await interaction.editReply({
+
+                content:
+                    `✅ Evento criado com sucesso.\n\n` +
+                    `📅 Evento: **${rascunho.nome}**\n` +
+                    `📢 Canal: ${canalEventos}\n` +
+                    `👥 Auxiliares: **${quantidadeAuxiliares}**\n` +
+                    `🟡 Reservas: **2**`
+
+            });
+
+            apagarResposta(
+                interaction,
+                15000
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao publicar evento:",
+                error
+            );
+
+            const mensagemErro =
+                error.message ||
+                "Não foi possível publicar o evento.";
+
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        `❌ ${mensagemErro}`
+
+                }).catch(() => {});
+
+            } else {
+
+                await interaction.reply({
+
+                    content:
+                        `❌ ${mensagemErro}`,
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                }).catch(() => {});
+
+            }
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
     // ==================================================
     // REGISTRO DE FARM
     // ==================================================
@@ -175,7 +705,8 @@ async function handleModal(interaction) {
         try {
 
             await interaction.deferReply({
-                flags: 64
+                flags:
+                    MessageFlags.Ephemeral
             });
 
             const nomeExibicao =
@@ -251,9 +782,11 @@ async function handleModal(interaction) {
                 canal =
                     await interaction.guild.channels.create({
 
-                        name: nomeCanal,
+                        name:
+                            nomeCanal,
 
-                        type: 0,
+                        type:
+                            0,
 
                         parent:
                             CATEGORIA_PLANILHAS,

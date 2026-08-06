@@ -565,6 +565,381 @@ async function iniciarBanco() {
         console.log(
             "✅ Estrutura do sistema de farm preparada."
         );
+// ==================================================
+// EVENTOS
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS eventos (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        mensagemId TEXT UNIQUE,
+
+        nome TEXT,
+
+        descricao TEXT,
+
+        dataHora TEXT,
+
+        traje TEXT,
+
+        responsavel TEXT,
+
+        quantidadeAuxiliares INTEGER,
+
+        flyer TEXT,
+
+        criadoPor TEXT,
+
+        dataCriacao TEXT
+
+    )
+`);
+
+// ==================================================
+// PARTICIPANTES DOS EVENTOS
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS eventoParticipantes (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        mensagemId TEXT,
+
+        discordId TEXT,
+
+        nome TEXT,
+
+        ordem INTEGER
+    )
+`);
+
+await garantirColuna(
+    "eventos",
+    "mensagemId",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "nome",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "descricao",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "dataHora",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "traje",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "responsavel",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "quantidadeAuxiliares",
+    "INTEGER DEFAULT 0"
+);
+
+await garantirColuna(
+    "eventos",
+    "flyer",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "criadoPor",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventos",
+    "dataCriacao",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventoParticipantes",
+    "mensagemId",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventoParticipantes",
+    "discordId",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventoParticipantes",
+    "nome",
+    "TEXT"
+);
+
+await garantirColuna(
+    "eventoParticipantes",
+    "ordem",
+    "INTEGER"
+);
+
+        // ==================================================
+        // ÍNDICES DOS EVENTOS
+        // ==================================================
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_eventos_mensagem
+            ON eventos (mensagemId)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_evento_participantes
+            ON eventoParticipantes (
+                mensagemId,
+                discordId
+            )
+        `);
+
+        // ==================================================
+        // PARCEIROS
+        // ==================================================
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS parceiros (
+
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                nomeFaccao TEXT NOT NULL,
+
+                categoria TEXT NOT NULL,
+
+                responsavel1 TEXT NOT NULL,
+
+                telefone1 TEXT NOT NULL,
+
+                responsavel2 TEXT,
+
+                telefone2 TEXT,
+
+                responsavel3 TEXT,
+
+                telefone3 TEXT,
+
+                criadoPor TEXT,
+
+                dataCriacao TEXT
+
+            )
+        `);
+
+        // ==================================================
+        // PRODUTOS DOS PARCEIROS
+        // ==================================================
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS parceiroProdutos (
+
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                parceiroId INTEGER NOT NULL,
+
+                produto TEXT NOT NULL,
+
+                valor TEXT NOT NULL,
+
+                ordem INTEGER DEFAULT 1,
+
+                FOREIGN KEY (
+                    parceiroId
+                )
+                REFERENCES parceiros(id)
+                ON DELETE CASCADE
+
+            )
+        `);
+
+        // ==================================================
+        // PAINEL DOS PARCEIROS
+        // ==================================================
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS painelParceiros (
+
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+
+                canalId TEXT,
+
+                mensagemId TEXT,
+
+                ultimaAtualizacao TEXT
+
+            )
+        `);
+
+        // ==================================================
+        // GARANTIR COLUNAS — PARCEIROS
+        // ==================================================
+
+        await garantirColuna(
+            "parceiros",
+            "nomeFaccao",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "categoria",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "responsavel1",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "telefone1",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "responsavel2",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "telefone2",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "responsavel3",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "telefone3",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "criadoPor",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiros",
+            "dataCriacao",
+            "TEXT"
+        );
+
+        // ==================================================
+        // GARANTIR COLUNAS — PRODUTOS
+        // ==================================================
+
+        await garantirColuna(
+            "parceiroProdutos",
+            "parceiroId",
+            "INTEGER"
+        );
+
+        await garantirColuna(
+            "parceiroProdutos",
+            "produto",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiroProdutos",
+            "valor",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "parceiroProdutos",
+            "ordem",
+            "INTEGER DEFAULT 1"
+        );
+
+        // ==================================================
+        // GARANTIR COLUNAS — PAINEL
+        // ==================================================
+
+        await garantirColuna(
+            "painelParceiros",
+            "canalId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "painelParceiros",
+            "mensagemId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "painelParceiros",
+            "ultimaAtualizacao",
+            "TEXT"
+        );
+
+                // ==================================================
+        // ÍNDICES DOS PARCEIROS
+        // ==================================================
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_parceiros_categoria
+            ON parceiros (categoria)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_parceiro_produtos_parceiro
+            ON parceiroProdutos (parceiroId)
+        `);
+
+        console.log(
+            "✅ Estrutura do banco verificada e atualizada."
+        );
+
+        console.log(
+            "✅ Estrutura do sistema de farm preparada."
+        );
+
+        console.log(
+            "✅ Estrutura do sistema de eventos preparada."
+        );
+
+        console.log(
+            "✅ Estrutura do sistema de parceiros preparada."
+        );
 
     } catch (error) {
 
@@ -576,5 +951,15 @@ async function iniciarBanco() {
     }
 
 }
+
+// ======================================================
+// INICIAR ESTRUTURA DO BANCO
+// ======================================================
+
+iniciarBanco();
+
+// ======================================================
+// EXPORTAÇÃO
+// ======================================================
 
 module.exports = db;
