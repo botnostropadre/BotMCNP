@@ -1626,84 +1626,114 @@ Clique em **Continuar Configuração** para informar:
 
     }
 
-    // ==================================================
-    // REGISTRO DE INTEGRANTES
-    // ==================================================
+   // ==================================================
+// REGISTRO DE INTEGRANTES
+// ==================================================
 
-    if (
-        interaction.customId ===
-        "registroModal"
-    ) {
+if (
+    interaction.customId ===
+    "registroModal"
+) {
 
-        const nome =
-            interaction.fields
-                .getTextInputValue("nome")
-                .trim();
+    const nome =
+        interaction.fields
+            .getTextInputValue(
+                "nome"
+            )
+            .trim();
 
-        const vulgo =
-            interaction.fields
-                .getTextInputValue("vulgo")
-                .trim();
+    const idCidade =
+        interaction.fields
+            .getTextInputValue(
+                "idCidade"
+            )
+            .trim();
 
-        const sobrenome =
-            interaction.fields
-                .getTextInputValue("sobrenome")
-                .trim();
+    const recrutador =
+        interaction.fields
+            .getTextInputValue(
+                "recrutador"
+            )
+            .trim();
 
-        const secretario =
-            interaction.fields
-                .getTextInputValue("secretario")
-                .trim();
+    const areaDesejada =
+        interaction.fields
+            .getTextInputValue(
+                "areaDesejada"
+            )
+            .trim();
 
-        try {
+    const live =
+        interaction.fields
+            .getTextInputValue(
+                "live"
+            )
+            .trim();
 
+    try {
+
+        const resultado =
             await registrar(
                 interaction,
                 {
                     nome,
-                    vulgo,
-                    sobrenome,
-                    secretario
+                    idCidade,
+                    recrutador,
+                    areaDesejada,
+                    live
                 }
             );
 
-            await interaction.reply({
+        await interaction.reply({
 
-                content:
-                    "✅ Registro realizado com sucesso!\n\n" +
-                    `Bem-vindo à ${settings.mc.nome}.`,
+            content:
+`✅ Sua ficha foi enviada para análise.
 
-                flags: 64
+👤 **Nome:** ${resultado.nome}
 
-            });
+🆔 **ID:** ${resultado.idCidade}
 
-        } catch (error) {
+🎯 **Área desejada:** ${resultado.areaDesejada}
 
-            console.error(
-                "Erro ao registrar integrante:",
-                error
-            );
+📌 **Status:** Aguardando aprovação
 
-            await interaction.reply({
+Você receberá uma mensagem privada quando seu registro for aprovado ou reprovado.`,
 
-                content:
-                    `❌ ${
-                        error.message ||
-                        "Não foi possível realizar o registro."
-                    }`,
+            flags:
+                MessageFlags.Ephemeral
 
-                flags: 64
+        });
 
-            });
+    } catch (error) {
 
-        }
+        console.error(
+            "Erro ao enviar registro:",
+            error
+        );
 
-        apagarResposta(interaction);
+        await interaction.reply({
 
-        return;
+            content:
+                `❌ ${
+                    error.message ||
+                    "Não foi possível enviar seu registro."
+                }`,
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
 
     }
 
+    apagarResposta(
+        interaction,
+        15000
+    );
+
+    return;
+
+}
 }
 
 // ======================================================
