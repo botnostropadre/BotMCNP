@@ -21,6 +21,9 @@ const {
     atualizarEditor
 } = require("../services/embedBuilderService");
 
+const db = require("../database/database");
+
+const settings = require("../config/settings.json");
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
@@ -53,73 +56,222 @@ async function handleSelectMenu(interaction) {
         return;
 
     }
+// ==================================================
+// REGISTRO — SELECIONAR CARGO
+// ==================================================
 
-    // ==================================================
-    // CATEGORIA FINANCEIRA
-    // ==================================================
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId.startsWith(
+        "registro_cargo_"
+    )
+) {
 
-    if (
-        interaction.isStringSelectMenu() &&
-        interaction.customId.startsWith(
-            "categoria_financeira_"
-        )
-    ) {
-
-        const tipo = interaction.customId.replace(
-            "categoria_financeira_",
+    const registroId =
+        interaction.customId.replace(
+            "registro_cargo_",
             ""
         );
 
-        const categoria = interaction.values[0];
+    const cargoId =
+        interaction.values[0];
 
-        const modal = new ModalBuilder()
+    const cargos = {
 
-            .setCustomId(
-                `financeiro_${tipo}_${categoria}`
-            )
+    [settings.cargos.eliteTeste]:
+        "Elite Teste",
 
-            .setTitle(
-                tipo === "entrada"
-                    ? "Registrar Entrada"
-                    : "Registrar Saída"
-            );
+    [settings.cargos.treinamento]:
+        "Treinamento",
 
-        const valor = new TextInputBuilder()
+    [settings.cargos.membro]:
+        "Membro",
 
-            .setCustomId("valor")
+    [settings.cargos.recrutamento]:
+        "Recrutamento",
 
-            .setLabel("Valor")
+    [settings.cargos.respEventos]:
+        "Resp. Eventos",
 
-            .setPlaceholder("Ex.: 1500,00")
+    [settings.cargos.respElite]:
+        "Resp. Elite",
 
-            .setStyle(TextInputStyle.Short)
+    [settings.cargos.gerencia]:
+        "Gerência",
 
-            .setRequired(true);
+    [settings.cargos.viceLideranca]:
+        "Vice Liderança",
 
-        const descricao = new TextInputBuilder()
+    [settings.cargos.lideranca]:
+        "Liderança"
 
-            .setCustomId("descricao")
+};
 
-            .setLabel("Descrição")
+    const cargoNome =
+        cargos[cargoId];
 
-            .setStyle(TextInputStyle.Paragraph)
+    if (!cargoNome) {
 
-            .setRequired(true);
+        await interaction.reply({
 
-        modal.addComponents(
+            content:
+                "❌ O cargo selecionado não é válido.",
 
-            new ActionRowBuilder()
-                .addComponents(valor),
+            flags: 64
 
-            new ActionRowBuilder()
-                .addComponents(descricao)
+        });
 
-        );
+        apagarResposta(interaction);
 
-        return interaction.showModal(modal);
+        return;
 
     }
 
+    try {
+
+        const registro =
+            await new Promise(
+                (resolve, reject) => {
+
+                    db.get(
+                        `
+                            SELECT *
+                            FROM registrosPendentes
+                            WHERE id = ?
+                        `,
+                        [
+                            registroId
+                        ],
+                        (
+                            error,
+                            row
+                        ) => {
+
+                            if (error) {
+
+                                return reject(
+                                    error
+                                );
+
+                            }
+
+                            resolve(
+                                row || null
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+        if (!registro) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Esse registro não foi encontrado.",
+
+                flags: 64
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        if (
+            registro.status !==
+            "Pendente"
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    `⚠️ Esse registro já foi ${registro.status.toLowerCase()}.`,
+
+                flags: 64
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        await new Promise(
+            (resolve, reject) => {
+
+                db.run(
+                    `
+                        UPDATE registrosPendentes
+
+                        SET
+                            cargoSelecionadoId = ?,
+                            cargoSelecionadoNome = ?
+
+                        WHERE id = ?
+                    `,
+                    [
+                        cargoId,
+                        cargoNome,
+                        registroId
+                    ],
+                    function (error) {
+
+                        if (error) {
+
+                            return reject(
+                                error
+                            );
+
+                        }
+
+                        resolve(this);
+
+                    }
+                );
+
+            }
+        );
+
+        await interaction.reply({
+
+            content:
+                `✅ Cargo selecionado para aprovação: **${cargoNome}**.`,
+
+            flags: 64
+
+        });
+
+        apagarResposta(interaction);
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao selecionar cargo do registro:",
+            error
+        );
+
+        await interaction.reply({
+
+            content:
+                "❌ Não foi possível salvar o cargo selecionado.",
+
+            flags: 64
+
+        }).catch(() => {});
+
+        apagarResposta(interaction);
+
+    }
+
+    return;
+
+}
     // ==================================================
     // MENU VISUAL DO EMBED
     // ==================================================

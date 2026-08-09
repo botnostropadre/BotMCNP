@@ -13,15 +13,6 @@ const COLORS = require("../config/colors");
 const settings = require("../config/settings.json");
 
 const {
-    registrarEntrada,
-    registrarSaida
-} = require("../services/financeiroService");
-
-const {
-    atualizarPainelFinanceiro
-} = require("../services/atualizarFinanceiro");
-
-const {
     atualizarEditor,
     adicionarCampo
 } = require("../services/embedBuilderService");
@@ -71,13 +62,6 @@ const {
 const {
     criarEventoParticipacaoButtons
 } = require("../buttons/eventoParticipacaoButtons");
-
-// ======================================================
-// SISTEMA DE PARCEIROS
-// ======================================================
-
-
-
 // ======================================================
 // SISTEMA DE FARM
 // ======================================================

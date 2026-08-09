@@ -7,10 +7,6 @@ const COLORS = require("../config/colors");
 const settings = require("../config/settings.json");
 
 const {
-    criarCategoriaFinanceira
-} = require("../selectMenus/categoriaFinanceira");
-
-const {
     criarModalRegistro
 } = require("../modals/registroModal");
 
@@ -84,6 +80,12 @@ const {
     publicarEmbed
 } = require("../services/publicarEmbedService");
 
+const db = require("../database/database");
+
+// ======================================================
+// SISTEMA DE PARCEIROS
+// ======================================================
+
 const {
     criarParceiroPrincipalModal
 } = require("../modals/parceiroPrincipalModal");
@@ -97,12 +99,13 @@ const {
 } = require("../modals/parceiroProdutosModal");
 
 const {
+    criarParceiroProdutoExtraModal
+} = require("../modals/parceiroProdutoExtraModal");
+
+const {
     removerRascunhoParceiro
 } = require("../services/parceiroBuilderService");
 
-const {
-    criarParceiroProdutoExtraModal
-} = require("../modals/parceiroProdutoExtraModal");
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
@@ -349,7 +352,6 @@ async function handleButton(interaction) {
                     mensagemId,
                     interaction.user.id
                 );
-
             if (
                 resultado.status ===
                 "nao_inscrito"
@@ -422,7 +424,7 @@ async function handleButton(interaction) {
         return;
 
     }
-   // ==================================================
+// ==================================================
 // REGISTRAR PARCEIRO
 // ==================================================
 
@@ -536,86 +538,6 @@ if (
         return interaction.showModal(
             criarModalRegistro()
         );
-
-    }
-
-    // ==================================================
-    // ENTRADA FINANCEIRA
-    // ==================================================
-
-    if (
-        interaction.customId ===
-        "financeiro_entrada"
-    ) {
-
-        const embed = new EmbedBuilder()
-
-            .setColor(COLORS.VERDE)
-
-            .setTitle("💰 Nova Entrada")
-
-            .setDescription(
-                "Selecione abaixo a categoria da entrada."
-            )
-
-            .setFooter({
-                text: settings.mc.nome
-            });
-
-        await interaction.reply({
-
-            embeds: [embed],
-
-            components:
-                criarCategoriaFinanceira("entrada"),
-
-            flags: 64
-
-        });
-
-        apagarResposta(interaction);
-
-        return;
-
-    }
-
-    // ==================================================
-    // SAÍDA FINANCEIRA
-    // ==================================================
-
-    if (
-        interaction.customId ===
-        "financeiro_saida"
-    ) {
-
-        const embed = new EmbedBuilder()
-
-            .setColor(COLORS.VERMELHO)
-
-            .setTitle("💸 Nova Saída")
-
-            .setDescription(
-                "Selecione abaixo a categoria da saída."
-            )
-
-            .setFooter({
-                text: settings.mc.nome
-            });
-
-        await interaction.reply({
-
-            embeds: [embed],
-
-            components:
-                criarCategoriaFinanceira("saida"),
-
-            flags: 64
-
-        });
-
-        apagarResposta(interaction);
-
-        return;
 
     }
 
@@ -947,6 +869,1395 @@ if (
         return;
 
     }
+// ==================================================
+// REGISTRO — APROVAR / REPROVAR
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "registro_aprovar_"
+    ) ||
+    interaction.customId.startsWith(
+        "registro_reprovar_"
+    )
+) {
+
+    const aprovando =
+        interaction.customId.startsWith(
+            "registro_aprovar_"
+        );
+
+    const registroId =
+        interaction.customId.replace(
+            aprovando
+                ? "registro_aprovar_"
+                : "registro_reprovar_",
+            ""
+        );
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    // ==================================================
+    // FUNÇÕES DO BANCO
+    // ==================================================
+
+    const consultarRegistro =
+        () => {
+
+            return new Promise(
+                (resolve, reject) => {
+
+                    db.get(
+                        `
+                            SELECT *
+                            FROM registrosPendentes
+                            WHERE id = ?
+                        `,
+                        [
+                            registroId
+                        ],
+                        (
+                            error,
+                            row
+                        ) => {
+
+                            if (error) {
+
+                                return reject(
+                                    error
+                                );
+
+                            }
+
+                            resolve(
+                                row || null
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+        };
+
+    const executar =
+        (
+            sql,
+            parametros = []
+        ) => {
+
+            return new Promise(
+                (resolve, reject) => {
+
+                    db.run(
+                        sql,
+                        parametros,
+                        function (error) {
+
+                            if (error) {
+
+                                return reject(
+                                    error
+                                );
+
+                            }
+
+                            resolve(this);
+
+                        }
+                    );
+
+                }
+            );
+
+        };
+
+    try {
+
+        // ==================================================
+        // BUSCAR REGISTRO
+        // ==================================================
+
+        const registro =
+            await consultarRegistro();
+
+        if (!registro) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Esse registro não foi encontrado."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        if (
+            registro.status !==
+            "Pendente"
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    `⚠️ Esse registro já foi analisado.\n\n` +
+                    `📌 Status atual: **${registro.status}**`
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==================================================
+        // APROVAR REGISTRO
+        // ==================================================
+
+        if (aprovando) {
+
+            // ==============================================
+            // VALIDAR CARGO SELECIONADO
+            // ==============================================
+
+            if (
+                !registro.cargoSelecionadoId ||
+                !registro.cargoSelecionadoNome
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Selecione o cargo que será concedido antes de aprovar o registro."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==============================================
+            // BUSCAR INTEGRANTE
+            // ==============================================
+
+            const membro =
+                await interaction.guild.members
+                    .fetch(
+                        registro.discordId
+                    )
+                    .catch(() => null);
+
+            if (!membro) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ O integrante não foi encontrado no servidor."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==============================================
+            // BUSCAR CARGO
+            // ==============================================
+
+            const cargo =
+                interaction.guild.roles.cache.get(
+                    registro.cargoSelecionadoId
+                ) ||
+                await interaction.guild.roles
+                    .fetch(
+                        registro.cargoSelecionadoId
+                    )
+                    .catch(() => null);
+
+            if (!cargo) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ O cargo selecionado não foi encontrado no servidor."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==============================================
+            // VALIDAR HIERARQUIA DO BOT
+            // ==============================================
+
+            const botMembro =
+                interaction.guild.members.me;
+
+            if (
+                !botMembro ||
+                botMembro.roles.highest.position <=
+                    cargo.position
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        `❌ O cargo do bot precisa estar acima de **${cargo.name}** na hierarquia do Discord.`
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==============================================
+            // IMPEDIR DUPLICIDADE
+            // ==============================================
+
+            const membroExistente =
+                await new Promise(
+                    (
+                        resolve,
+                        reject
+                    ) => {
+
+                        db.get(
+                            `
+                                SELECT discordId
+                                FROM membros
+                                WHERE discordId = ?
+                            `,
+                            [
+                                registro.discordId
+                            ],
+                            (
+                                error,
+                                row
+                            ) => {
+
+                                if (error) {
+
+                                    return reject(
+                                        error
+                                    );
+
+                                }
+
+                                resolve(
+                                    row || null
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+            if (membroExistente) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Esse integrante já possui cadastro ativo no sistema."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==============================================
+            // TRAVAR REGISTRO PARA EVITAR DUPLA APROVAÇÃO
+            // ==============================================
+
+            const bloqueio =
+                await executar(
+                    `
+                        UPDATE registrosPendentes
+
+                        SET status = 'Processando'
+
+                        WHERE id = ?
+                        AND status = 'Pendente'
+                    `,
+                    [
+                        registroId
+                    ]
+                );
+
+            if (
+                bloqueio.changes === 0
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "⚠️ Esse registro já está sendo analisado por outra pessoa."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+                   let cargoAdicionado =
+            false;
+
+        let cargoAreaAdicionado =
+            false;
+
+        let cargoArea =
+            null;
+
+        let nicknameAlterado =
+            false;
+
+        const nicknameAnterior =
+            membro.nickname;
+
+        try {
+
+            // ==========================================
+            // DEFINIR CARGO DA ÁREA
+            // ==========================================
+
+            const cargosArea = {
+
+                Elite:
+                    settings.cargos.elite,
+
+                Eventos:
+                    settings.cargos.eventos,
+
+                Farm:
+                    settings.cargos.farm
+
+            };
+
+            const cargoAreaId =
+                cargosArea[
+                    registro.areaDesejada
+                ];
+
+            if (!cargoAreaId) {
+
+                throw new Error(
+                    `Não existe um cargo configurado para a área ${registro.areaDesejada}.`
+                );
+
+            }
+
+            cargoArea =
+                interaction.guild.roles.cache.get(
+                    cargoAreaId
+                ) ||
+                await interaction.guild.roles
+                    .fetch(
+                        cargoAreaId
+                    )
+                    .catch(() => null);
+
+            if (!cargoArea) {
+
+                throw new Error(
+                    `O cargo da área ${registro.areaDesejada} não foi encontrado no servidor.`
+                );
+
+            }
+
+            // ==========================================
+            // VALIDAR HIERARQUIA DO CARGO DE ÁREA
+            // ==========================================
+
+            if (
+                botMembro.roles.highest.position <=
+                cargoArea.position
+            ) {
+
+                throw new Error(
+                    `O cargo do bot precisa estar acima do cargo de área **${cargoArea.name}**.`
+                );
+
+            }
+
+            // ==========================================
+// DEFINIR NICKNAME
+// ==========================================
+
+const novoNickname =
+    `${registro.nome} - ${registro.idCidade}`;
+
+if (
+    novoNickname.length > 32
+) {
+
+    throw new Error(
+        `O nickname "${novoNickname}" ultrapassa o limite de 32 caracteres do Discord.`
+    );
+
+}
+
+// ==========================================
+// APLICAR NICKNAME
+// ==========================================
+
+try {
+
+    await membro.setNickname(
+        novoNickname,
+        `Registro aprovado por ${interaction.user.tag}`
+    );
+
+    nicknameAlterado =
+        true;
+
+} catch (error) {
+
+    console.error(
+        "Erro ao alterar nickname durante aprovação:",
+        error
+    );
+
+    if (
+        interaction.guild.ownerId ===
+        membro.id
+    ) {
+
+        throw new Error(
+            "O Discord não permite alterar o nickname do dono do servidor."
+        );
+
+    }
+
+    throw new Error(
+        "Não foi possível alterar o nickname. Verifique a permissão Gerenciar Apelidos e a posição do cargo do bot."
+    );
+
+}
+            // ==========================================
+            // CONCEDER CARGO PRINCIPAL
+            // ==========================================
+
+            await membro.roles.add(
+                cargo,
+                `Registro aprovado por ${interaction.user.tag}`
+            );
+
+            cargoAdicionado =
+                true;
+
+            // ==========================================
+            // CONCEDER CARGO DA ÁREA
+            // ==========================================
+
+            if (
+                cargoArea.id !==
+                cargo.id
+            ) {
+
+                await membro.roles.add(
+                    cargoArea,
+                    `Área definida no registro: ${registro.areaDesejada}`
+                );
+
+                cargoAreaAdicionado =
+                    true;
+
+            }
+                
+
+
+                // ==========================================
+                // SALVAR COMO INTEGRANTE
+                // ==========================================
+
+                const dataRegistro =
+                    new Date().toLocaleString(
+                        "pt-BR"
+                    );
+
+                await executar(
+                    `
+                        INSERT INTO membros (
+
+                            discordId,
+                            nome,
+                            idCidade,
+                            recrutador,
+                            areaDesejada,
+                            fazLive,
+                            linkLive,
+                            cargo,
+                            advertencias,
+                            promocoes,
+                            rebaixamentos,
+                            status,
+                            dataRegistro,
+                            ultimaPromocao,
+                            ultimaAdvertencia
+
+                        )
+                        VALUES (
+                            ?, ?, ?, ?, ?, ?, ?, ?,
+                            0, 0, 0,
+                            'Ativo',
+                            ?, NULL, NULL
+                        )
+                    `,
+                    [
+                        registro.discordId,
+                        registro.nome,
+                        registro.idCidade,
+                        registro.recrutador,
+                        registro.areaDesejada,
+                        registro.fazLive,
+                        registro.linkLive,
+                        registro.cargoSelecionadoNome,
+                        dataRegistro
+                    ]
+                );
+
+                // ==========================================
+                // FINALIZAR SOLICITAÇÃO
+                // ==========================================
+
+                await executar(
+                    `
+                        UPDATE registrosPendentes
+
+                        SET
+                            status = 'Aprovado',
+
+                            aprovadoPorId = ?,
+
+                            aprovadoPorNome = ?,
+
+                            resultadoEm = ?
+
+                        WHERE id = ?
+                    `,
+                    [
+                        interaction.user.id,
+                        interaction.user.username,
+                        dataRegistro,
+                        registroId
+                    ]
+                );
+
+           } catch (error) {
+
+    console.error(
+        "Erro durante aprovação do registro:",
+        error
+    );
+
+    // ==========================================
+    // ROLLBACK — CARGO DA ÁREA
+    // ==========================================
+
+    if (
+        cargoAreaAdicionado &&
+        cargoArea
+    ) {
+
+        await membro.roles.remove(
+            cargoArea
+        ).catch(() => {});
+
+    }
+
+    // ==========================================
+    // ROLLBACK — CARGO PRINCIPAL
+    // ==========================================
+
+    if (cargoAdicionado) {
+
+        await membro.roles.remove(
+            cargo
+        ).catch(() => {});
+
+    }
+
+    // ==========================================
+    // ROLLBACK — NICKNAME
+    // ==========================================
+
+    if (nicknameAlterado) {
+
+        await membro.setNickname(
+            nicknameAnterior
+        ).catch(() => {});
+
+    }
+
+    // ==========================================
+    // ROLLBACK — BANCO DE MEMBROS
+    // ==========================================
+
+    await executar(
+        `
+            DELETE FROM membros
+            WHERE discordId = ?
+        `,
+        [
+            registro.discordId
+        ]
+    ).catch(() => {});
+
+    // ==========================================
+    // DEVOLVER REGISTRO PARA PENDENTE
+    // ==========================================
+
+    await executar(
+        `
+            UPDATE registrosPendentes
+
+            SET status = 'Pendente'
+
+            WHERE id = ?
+        `,
+        [
+            registroId
+        ]
+    ).catch(() => {});
+
+    throw error;
+
+}
+
+            // ==============================================
+            // ATUALIZAR FICHA NO CANAL
+            // ==============================================
+
+            const embedAprovado =
+                new EmbedBuilder()
+
+                    .setColor(
+                        COLORS.VERDE
+                    )
+
+                    .setTitle(
+                        `✅ REGISTRO APROVADO — ${registro.nome.toUpperCase()}`
+                    )
+
+                    .setThumbnail(
+                        membro.user.displayAvatarURL({
+                            size: 256
+                        })
+                    )
+
+                    .addFields(
+
+                        {
+                            name:
+                                "👤 Nome",
+
+                            value:
+                                registro.nome,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "🆔 ID",
+
+                            value:
+                                registro.idCidade,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "🤝 Quem recrutou",
+
+                            value:
+                                registro.recrutador,
+
+                            inline:
+                                false
+                        },
+
+                        {
+                            name:
+                                "🎯 Área desejada",
+
+                            value:
+                                registro.areaDesejada,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "📺 Faz live?",
+
+                            value:
+                                registro.fazLive
+                                    ? "Sim"
+                                    : "Não",
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "🔗 Canal",
+
+                            value:
+                                registro.fazLive
+                                    ? registro.linkLive
+                                    : "Não informado",
+
+                            inline:
+                                false
+                        },
+
+                        {
+                            name:
+                                "🎖 Cargo concedido",
+
+                            value:
+                                registro.cargoSelecionadoNome,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "✅ Aprovado por",
+
+                            value:
+                                `${interaction.user}`,
+
+                            inline:
+                                true
+                        },
+
+                        {
+                            name:
+                                "📌 Status",
+
+                            value:
+                                "🟢 Aprovado",
+
+                            inline:
+                                false
+                        }
+
+                    )
+
+                    .setFooter({
+
+                        text:
+                            `${settings.mc.nome} • Sistema de Registro`
+
+                    })
+
+                    .setTimestamp();
+
+            await interaction.message.edit({
+
+                embeds: [
+                    embedAprovado
+                ],
+
+                components: []
+
+            });
+// ==================================================
+// DM DE APROVAÇÃO
+// ==================================================
+
+await membro.send({
+
+    embeds: [
+
+        new EmbedBuilder()
+
+            .setColor(
+                COLORS.VERDE
+            )
+
+            .setTitle(
+                "✅ Registro aprovado"
+            )
+
+            .setDescription(
+                `Seu registro na **${settings.mc.nome}** foi aprovado.`
+            )
+
+            .addFields(
+
+                {
+                    name:
+                        "👤 Nome",
+
+                    value:
+                        registro.nome,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🆔 ID",
+
+                    value:
+                        registro.idCidade,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🎖 Cargo recebido",
+
+                    value:
+                        registro.cargoSelecionadoNome,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🎯 Área",
+
+                    value:
+                        registro.areaDesejada,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🏷 Novo nome no Discord",
+
+                    value:
+                        `${registro.nome} - ${registro.idCidade}`,
+
+                    inline:
+                        false
+                }
+
+            )
+
+            .setFooter({
+
+                text:
+                    settings.mc.nome
+
+            })
+
+            .setTimestamp()
+
+    ]
+
+}).catch(error => {
+
+    console.log(
+        `Não foi possível enviar DM de aprovação para ${registro.discordId}:`,
+        error.message
+    );
+
+});
+            
+
+            // ==============================================
+            // LOG DO REGISTRO
+            // ==============================================
+
+            const CANAL_LOGS_REGISTRO =
+                "1533175931005305164";
+
+            const canalLogs =
+                interaction.guild.channels.cache.get(
+                    CANAL_LOGS_REGISTRO
+                ) ||
+                await interaction.guild.channels
+                    .fetch(
+                        CANAL_LOGS_REGISTRO
+                    )
+                    .catch(() => null);
+
+            if (
+                canalLogs &&
+                canalLogs.isTextBased()
+            ) {
+
+                const embedLog =
+                    new EmbedBuilder()
+
+                        .setColor(
+                            COLORS.VERDE
+                        )
+
+                        .setTitle(
+                            "✅ Registro Aprovado"
+                        )
+
+                        .setThumbnail(
+                            membro.user.displayAvatarURL({
+                                size: 256
+                            })
+                        )
+
+                        .addFields(
+
+                            {
+                                name:
+                                    "👤 Nome",
+
+                                value:
+                                    registro.nome,
+
+                                inline:
+                                    true
+                            },
+
+                            {
+                                name:
+                                    "🆔 ID",
+
+                                value:
+                                    registro.idCidade,
+
+                                inline:
+                                    true
+                            },
+
+                            {
+                                name:
+                                    "💬 Discord",
+
+                                value:
+                                    `${membro}`,
+
+                                inline:
+                                    false
+                            },
+
+                            {
+                                name:
+                                    "🤝 Recrutado por",
+
+                                value:
+                                    registro.recrutador,
+
+                                inline:
+                                    true
+                            },
+
+                            {
+                                name:
+                                    "🎯 Área desejada",
+
+                                value:
+                                    registro.areaDesejada,
+
+                                inline:
+                                    true
+                            },
+
+                            {
+                                name:
+                                    "📺 Live",
+
+                                value:
+                                    registro.fazLive
+                                        ? registro.linkLive
+                                        : "Não",
+
+                                inline:
+                                    false
+                            },
+
+                            {
+                                name:
+                                    "🎖 Cargo concedido",
+
+                                value:
+                                    registro.cargoSelecionadoNome,
+
+                                inline:
+                                    true
+                            },
+{
+    name:
+        "🎯 Cargo de área",
+
+    value:
+        cargoArea
+            ? cargoArea.name
+            : registro.areaDesejada,
+
+    inline:
+        true
+},
+                            {
+                                name:
+                                    "🛡 Aprovado por",
+
+                                value:
+                                    `${interaction.user}`,
+
+                                inline:
+                                    true
+                            }
+
+                        )
+
+                        .setFooter({
+
+                            text:
+                                `${settings.mc.nome} • Logs de Registro`
+
+                        })
+
+                        .setTimestamp();
+
+                await canalLogs.send({
+
+                    embeds: [
+                        embedLog
+                    ]
+
+                });
+
+            }
+
+            await interaction.editReply({
+
+                content:
+                    `✅ Registro de **${registro.nome}** aprovado.\n\n` +
+                    `🎖 Cargo concedido: **${registro.cargoSelecionadoNome}**`
+
+            });
+
+            apagarResposta(
+                interaction,
+                15000
+            );
+
+            return;
+
+        }
+
+        // ==================================================
+        // REPROVAR REGISTRO
+        // ==================================================
+
+        const resultado =
+            await executar(
+                `
+                    UPDATE registrosPendentes
+
+                    SET
+                        status = 'Reprovado',
+
+                        aprovadoPorId = ?,
+
+                        aprovadoPorNome = ?,
+
+                        resultadoEm = ?
+
+                    WHERE id = ?
+                    AND status = 'Pendente'
+                `,
+                [
+                    interaction.user.id,
+                    interaction.user.username,
+                    new Date().toLocaleString(
+                        "pt-BR"
+                    ),
+                    registroId
+                ]
+            );
+
+        if (
+            resultado.changes === 0
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "⚠️ Esse registro já foi analisado por outra pessoa."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        const usuario =
+            await interaction.client.users
+                .fetch(
+                    registro.discordId
+                )
+                .catch(() => null);
+
+        const embedReprovado =
+            new EmbedBuilder()
+
+                .setColor(
+                    COLORS.VERMELHO
+                )
+
+                .setTitle(
+                    `❌ REGISTRO REPROVADO — ${registro.nome.toUpperCase()}`
+                )
+
+                .addFields(
+
+                    {
+                        name:
+                            "👤 Nome",
+
+                        value:
+                            registro.nome,
+
+                        inline:
+                            true
+                    },
+
+                    {
+                        name:
+                            "🆔 ID",
+
+                        value:
+                            registro.idCidade,
+
+                        inline:
+                            true
+                    },
+
+                    {
+                        name:
+                            "🤝 Quem recrutou",
+
+                        value:
+                            registro.recrutador,
+
+                        inline:
+                            false
+                    },
+
+                    {
+                        name:
+                            "🎯 Área desejada",
+
+                        value:
+                            registro.areaDesejada,
+
+                        inline:
+                            true
+                    },
+
+                    {
+                        name:
+                            "📺 Live",
+
+                        value:
+                            registro.fazLive
+                                ? registro.linkLive
+                                : "Não",
+
+                        inline:
+                            true
+                    },
+
+                    {
+                        name:
+                            "❌ Reprovado por",
+
+                        value:
+                            `${interaction.user}`,
+
+                        inline:
+                            false
+                    },
+
+                    {
+                        name:
+                            "📌 Status",
+
+                        value:
+                            "🔴 Reprovado",
+
+                        inline:
+                            false
+                    }
+
+                )
+
+                .setFooter({
+
+                    text:
+                        `${settings.mc.nome} • Sistema de Registro`
+
+                })
+
+                .setTimestamp();
+
+        await interaction.message.edit({
+
+            embeds: [
+                embedReprovado
+            ],
+
+            components: []
+
+        });
+
+        // ==================================================
+        // DM DE REPROVAÇÃO
+        // ==================================================
+
+        if (usuario) {
+
+            await usuario.send({
+
+                embeds: [
+
+                    new EmbedBuilder()
+
+                        .setColor(
+                            COLORS.VERMELHO
+                        )
+
+                        .setTitle(
+                            "❌ Registro reprovado"
+                        )
+
+                        .setDescription(
+                            `Seu registro na **${settings.mc.nome}** foi reprovado.`
+                        )
+
+                        .setFooter({
+
+                            text:
+                                settings.mc.nome
+
+                        })
+
+                        .setTimestamp()
+
+                ]
+
+            }).catch(error => {
+
+                console.log(
+                    `Não foi possível enviar DM para ${registro.discordId}:`,
+                    error.message
+                );
+
+            });
+
+        }
+
+        // ==================================================
+        // LOG DA REPROVAÇÃO
+        // ==================================================
+
+        const CANAL_LOGS_REGISTRO =
+            "1533175931005305164";
+
+        const canalLogs =
+            interaction.guild.channels.cache.get(
+                CANAL_LOGS_REGISTRO
+            ) ||
+            await interaction.guild.channels
+                .fetch(
+                    CANAL_LOGS_REGISTRO
+                )
+                .catch(() => null);
+
+        if (
+            canalLogs &&
+            canalLogs.isTextBased()
+        ) {
+
+            await canalLogs.send({
+
+                embeds: [
+                    embedReprovado
+                ]
+
+            });
+
+        }
+
+        await interaction.editReply({
+
+            content:
+                `❌ Registro de **${registro.nome}** reprovado.`
+
+        });
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao analisar registro:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível concluir a análise do registro.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(() => {});
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    }
+
+    return;
+
+}
 
 }
 

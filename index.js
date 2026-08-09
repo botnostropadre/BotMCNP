@@ -23,10 +23,6 @@ const {
 } = require("./handlers/modalHandler");
 
 const {
-    handleDashboard
-} = require("./handlers/dashboardHandler");
-
-const {
     handleSelectMenu
 } = require("./handlers/selectMenuHandler");
 
@@ -46,45 +42,58 @@ const {
     handleRebaixarMenu
 } = require("./selectMenus/rebaixarMenu");
 
-const {
-    setClient
-} = require("./services/dashboardService");
-
 // ======================================================
 // CRIAR CLIENTE
 // ======================================================
 
 const client = new Client({
+
     intents: [
+
         GatewayIntentBits.Guilds,
+
         GatewayIntentBits.GuildMembers
+
     ]
+
 });
 
-client.commands = new Collection();
+client.commands =
+    new Collection();
 
 // ======================================================
 // CARREGAR COMANDOS
 // ======================================================
 
-const commandsPath = path.join(
-    __dirname,
-    "commands"
-);
+const commandsPath =
+    path.join(
+        __dirname,
+        "commands"
+    );
 
-const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter(file => file.endsWith(".js"));
+const commandFiles =
+    fs
+        .readdirSync(commandsPath)
+        .filter(
+            file =>
+                file.endsWith(".js")
+        );
 
-for (const file of commandFiles) {
+for (
+    const file
+    of commandFiles
+) {
 
-    console.log(`Carregando: ${file}`);
+    console.log(
+        `Carregando: ${file}`
+    );
 
     try {
 
-        const command = require(
-            `./commands/${file}`
-        );
+        const command =
+            require(
+                `./commands/${file}`
+            );
 
         if (
             !command.data ||
@@ -110,7 +119,9 @@ for (const file of commandFiles) {
             `Erro ao carregar ${file}`
         );
 
-        console.error(error);
+        console.error(
+            error
+        );
 
     }
 
@@ -120,50 +131,59 @@ for (const file of commandFiles) {
 // BOT PRONTO
 // ======================================================
 
-client.once("clientReady", () => {
+client.once(
+    "clientReady",
+    () => {
 
-    setClient(client);
+        console.clear();
 
-    console.clear();
+        console.log(
+            "======================================"
+        );
 
-    console.log(
-        "======================================"
-    );
+        console.log(
+            `💵 ${settings.mc.nome.toUpperCase()}`
+        );
 
-    console.log(
-        `💵 ${settings.mc.nome.toUpperCase()}`
-    );
+        console.log(
+            "======================================"
+        );
 
-    console.log(
-        "======================================"
-    );
+        console.log(
+            `🤖 ${client.user.tag}`
+        );
 
-    console.log(
-        `🤖 ${client.user.tag}`
-    );
+        console.log(
+            "Sistema iniciado com sucesso."
+        );
 
-    console.log(
-        "Sistema iniciado com sucesso."
-    );
+        console.log(
+            "======================================"
+        );
 
-    console.log(
-        "======================================"
-    );
+        client.user.setPresence({
 
-    client.user.setPresence({
+            activities: [
 
-        activities: [
-            {
-                name: settings.mc.nome,
-                type: ActivityType.Watching
-            }
-        ],
+                {
 
-        status: "online"
+                    name:
+                        settings.mc.nome,
 
-    });
+                    type:
+                        ActivityType.Watching
 
-});
+                }
+
+            ],
+
+            status:
+                "online"
+
+        });
+
+    }
+);
 
 // ======================================================
 // INTERAÇÕES
@@ -174,7 +194,8 @@ client.on(
     async interaction => {
 
         const idadeInteracao =
-            Date.now() - interaction.createdTimestamp;
+            Date.now() -
+            interaction.createdTimestamp;
 
         const identificador =
             interaction.customId ||
@@ -221,28 +242,7 @@ client.on(
             }
 
             // ==========================================
-            // BOTÕES DO DASHBOARD
-            // ==========================================
-
-            if (
-                interaction.isButton() &&
-                [
-                    "dashboard",
-                    "dash_membros",
-                    "dash_financeiro"
-                ].includes(interaction.customId)
-            ) {
-
-                await handleDashboard(
-                    interaction
-                );
-
-                return;
-
-            }
-
-            // ==========================================
-            // DEMAIS BOTÕES
+            // BOTÕES
             // ==========================================
 
             if (
@@ -363,7 +363,9 @@ client.on(
                 "Erro ao processar interação:"
             );
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             console.error(
                 `A interação tinha ${
@@ -395,16 +397,19 @@ client.on(
                     content:
                         "❌ Ocorreu um erro ao executar esta ação.",
 
-                    flags: 64
+                    flags:
+                        64
 
-                }).catch(replyError => {
+                }).catch(
+                    replyError => {
 
-                    console.error(
-                        "Não foi possível enviar a mensagem de erro:",
-                        replyError.message
-                    );
+                        console.error(
+                            "Não foi possível enviar a mensagem de erro:",
+                            replyError.message
+                        );
 
-                });
+                    }
+                );
 
             }
 

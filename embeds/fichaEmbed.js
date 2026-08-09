@@ -15,11 +15,19 @@ function criarFicha(
     advertencias = 0
 ) {
 
+    const fazLive =
+        Number(dados.fazLive) === 1 ||
+        dados.fazLive === true;
+
     return new EmbedBuilder()
 
-        .setColor(COLORS.VERDE)
+        .setColor(
+            COLORS.VERDE
+        )
 
-        .setTitle("📋 Perfil do Integrante")
+        .setTitle(
+            "📋 Perfil do Integrante"
+        )
 
         .setDescription(
 `━━━━━━━━━━━━━━━━━━━━━━
@@ -29,7 +37,6 @@ function criarFicha(
 
         .setThumbnail(
             usuario.displayAvatarURL({
-                dynamic: true,
                 size: 256
             })
         )
@@ -37,64 +44,166 @@ function criarFicha(
         .addFields(
 
             {
-                name: "👤 Integrante",
-                value: dados.nomeCompleto,
-                inline: false
+                name:
+                    "👤 Nome",
+
+                value:
+                    dados.nome ||
+                    "Não informado",
+
+                inline:
+                    true
             },
 
             {
-                name: "🎖 Cargo",
-                value: dados.cargo,
-                inline: true
+                name:
+                    "🆔 ID",
+
+                value:
+                    dados.idCidade ||
+                    "Não informado",
+
+                inline:
+                    true
             },
 
             {
-                name: "📋 Recrutador",
-                value: dados.secretario,
-                inline: true
+                name:
+                    "🎖 Cargo",
+
+                value:
+                    dados.cargo ||
+                    "Não informado",
+
+                inline:
+                    true
             },
 
             {
-                name: "📅 Data de Registro",
-                value: dados.dataRegistro,
-                inline: false
+                name:
+                    "🤝 Recrutado por",
+
+                value:
+                    dados.recrutador ||
+                    "Não informado",
+
+                inline:
+                    true
             },
 
             {
-                name: "⚠️ Advertências",
-                value: `${advertencias}`,
-                inline: true
+                name:
+                    "🎯 Área",
+
+                value:
+                    dados.areaDesejada ||
+                    "Não informada",
+
+                inline:
+                    true
             },
 
             {
-                name: "📈 Promoções",
-                value: `${dados.promocoes ?? 0}`,
-                inline: true
+                name:
+                    "📺 Faz live?",
+
+                value:
+                    fazLive
+                        ? "Sim"
+                        : "Não",
+
+                inline:
+                    true
             },
 
             {
-                name: "📉 Rebaixamentos",
-                value: `${dados.rebaixamentos ?? 0}`,
-                inline: true
+                name:
+                    "🔗 Canal",
+
+                value:
+                    fazLive &&
+                    dados.linkLive
+                        ? dados.linkLive
+                        : "Não informado",
+
+                inline:
+                    false
             },
 
             {
-                name: "📌 Status",
-                value: dados.status || "🟢 Ativo",
-                inline: true
+                name:
+                    "📅 Data de Registro",
+
+                value:
+                    dados.dataRegistro ||
+                    "Não informada",
+
+                inline:
+                    false
             },
 
             {
-                name: "💬 Discord",
-                value: `${usuario}`,
-                inline: true
+                name:
+                    "⚠️ Advertências",
+
+                value:
+                    `${advertencias}`,
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    "📈 Promoções",
+
+                value:
+                    `${dados.promocoes ?? 0}`,
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    "📉 Rebaixamentos",
+
+                value:
+                    `${dados.rebaixamentos ?? 0}`,
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    "📌 Status",
+
+                value:
+                    dados.status ||
+                    "Ativo",
+
+                inline:
+                    true
+            },
+
+            {
+                name:
+                    "💬 Discord",
+
+                value:
+                    `${usuario}`,
+
+                inline:
+                    true
             }
 
         )
 
         .setFooter({
 
-            text: `${settings.mc.nome} • Sistema de Gestão`
+            text:
+                `${settings.mc.nome} • Sistema de Gestão`
 
         })
 
@@ -107,7 +216,5 @@ function criarFicha(
 // ======================================================
 
 module.exports = {
-
     criarFicha
-
 };

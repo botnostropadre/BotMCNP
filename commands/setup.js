@@ -6,11 +6,19 @@ const {
     MessageFlags
 } = require("discord.js");
 
-const settings = require("../config/settings.json");
-
 const {
     criarBotaoRegistro
 } = require("../buttons/registroButton");
+
+const settings =
+    require("../config/settings.json");
+
+// ======================================================
+// CONFIGURAÇÃO
+// ======================================================
+
+const CANAL_REGISTRO =
+    "1530460702861430914";
 
 // ======================================================
 // COMANDO /SETUP
@@ -32,52 +40,137 @@ module.exports = {
 
     async execute(interaction) {
 
-        const embed = new EmbedBuilder()
+        try {
 
-            .setColor("#2B2D31")
+            const canal =
+                interaction.guild.channels.cache.get(
+                    CANAL_REGISTRO
+                ) ||
+                await interaction.guild.channels
+                    .fetch(
+                        CANAL_REGISTRO
+                    )
+                    .catch(() => null);
 
-            .setTitle(
-                `💵 ${settings.mc.nome}`
-            )
+            if (
+                !canal ||
+                !canal.isTextBased()
+            ) {
 
-            .setDescription(
-`Bem-vindo ao sistema de registro da ${settings.mc.nome}.
+                await interaction.reply({
 
-Clique no botão abaixo para iniciar seu cadastro.
+                    content:
+                        "❌ O canal de registro não foi encontrado.",
 
-Após preencher o formulário, você receberá automaticamente o cargo **Treinamento**.`
-            )
+                    flags:
+                        MessageFlags.Ephemeral
 
-            .setFooter({
-                text:
-                    `${settings.mc.nome} • Sistema de Registro`
-            })
+                });
 
-            .setTimestamp();
+                return;
 
-        const row =
-            new ActionRowBuilder()
-                .addComponents(
-                    criarBotaoRegistro()
-                );
+            }
 
-        await interaction.reply({
+            const embed =
+                new EmbedBuilder()
 
-            content:
-                "✅ Painel de registro criado com sucesso.",
+                    .setColor(
+                        "#2B2D31"
+                    )
 
-            flags:
-                MessageFlags.Ephemeral
+                    .setTitle(
+                        `📋 Registro • ${settings.mc.nome}`
+                    )
 
-        });
+                    .setDescription(
+`Utilize o botão abaixo para enviar sua ficha de entrada na organização.
 
-        await interaction.channel.send({
+Durante o registro serão solicitadas as seguintes informações:
 
-            embeds: [embed],
+👤 **Nome**
 
-            components: [row]
+🆔 **ID**
 
-        });
+🤝 **Quem te recrutou?**
+
+🎯 **Área desejada**
+Elite, Eventos ou Farm
+
+📺 **Faz live?**
+Caso faça, informe o link do seu canal.
+
+---
+
+Após enviar sua ficha, ela será encaminhada para análise da liderança.
+
+Você **não receberá cargo automaticamente**.
+
+Assim que o registro for analisado, você receberá o resultado por mensagem privada.`
+                    )
+
+                    .setFooter({
+
+                        text:
+                            `${settings.mc.nome} • Sistema de Registro`
+
+                    })
+
+                    .setTimestamp();
+
+            const row =
+                new ActionRowBuilder()
+
+                    .addComponents(
+                        criarBotaoRegistro()
+                    );
+
+            await canal.send({
+
+                embeds: [
+                    embed
+                ],
+
+                components: [
+                    row
+                ]
+
+            });
+
+            await interaction.reply({
+
+                content:
+                    `✅ Painel de registro criado em ${canal}.`,
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao criar painel de registro:",
+                error
+            );
+
+            if (
+                !interaction.replied &&
+                !interaction.deferred
+            ) {
+
+                await interaction.reply({
+
+                    content:
+                        "❌ Não foi possível criar o painel de registro.",
+
+                    flags:
+                        MessageFlags.Ephemeral
+
+                }).catch(() => {});
+
+            }
+
+        }
 
     }
 

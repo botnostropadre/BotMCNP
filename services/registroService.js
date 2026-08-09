@@ -25,21 +25,37 @@ function executarBanco(sql, parametros = []) {
 }
 
 // ======================================================
-// REGISTRAR INTEGRANTE
+// REGISTRAR SOLICITAÇÃO
 // ======================================================
 
 async function registrar(interaction, dados) {
 
-    const nome = dados.nome?.trim();
-    const vulgo = dados.vulgo?.trim();
-    const sobrenome = dados.sobrenome?.trim();
-    const secretario = dados.secretario?.trim();
+    const nome =
+        dados.nome?.trim();
+
+    const idCidade =
+        dados.idCidade?.trim();
+
+    const recrutador =
+        dados.recrutador?.trim();
+
+    const areaInformada =
+        dados.areaDesejada?.trim();
+
+    const liveInformada =
+        dados.live?.trim();
 
     // ==================================================
     // VALIDAR CAMPOS
     // ==================================================
 
-    if (!nome || !vulgo || !sobrenome || !secretario) {
+    if (
+        !nome ||
+        !idCidade ||
+        !recrutador ||
+        !areaInformada ||
+        !liveInformada
+    ) {
 
         throw new Error(
             "Todos os campos do registro precisam ser preenchidos."
@@ -47,16 +63,157 @@ async function registrar(interaction, dados) {
 
     }
 
-    const nomeCompleto = `${nome} "${vulgo}" ${sobrenome}`;
+    // ==================================================
+    // VALIDAR NOME
+    // ==================================================
 
-    if (nomeCompleto.length > 32) {
+    if (
+        nome.length < 2 ||
+        nome.length > 50
+    ) {
 
         throw new Error(
-            `O nome completo possui ${nomeCompleto.length} caracteres. ` +
-            "O apelido do Discord permite no máximo 32 caracteres."
+            "O nome precisa possuir entre 2 e 50 caracteres."
         );
 
     }
+
+    // ==================================================
+    // VALIDAR ID
+    // ==================================================
+
+    if (
+        !/^\d+$/.test(idCidade)
+    ) {
+
+        throw new Error(
+            "O ID deve conter apenas números."
+        );
+
+    }
+
+    // ==================================================
+    // NORMALIZAR ÁREA DE INTERESSE
+    // ==================================================
+
+    const normalizarTexto = texto => {
+
+        return texto
+
+            .normalize("NFD")
+
+            .replace(
+                /[\u0300-\u036f]/g,
+                ""
+            )
+
+            .trim()
+
+            .toLowerCase();
+
+    };
+
+    const areasPermitidas = {
+
+        elite:
+            "Elite",
+
+        evento:
+            "Eventos",
+
+        eventos:
+            "Eventos",
+
+        farm:
+            "Farm"
+
+    };
+
+    const areaDesejada =
+        areasPermitidas[
+            normalizarTexto(
+                areaInformada
+            )
+        ];
+
+    if (!areaDesejada) {
+
+        throw new Error(
+            "Área inválida. Informe apenas: Elite, Eventos ou Farm."
+        );
+
+    }
+
+    // ==================================================
+    // VALIDAR LIVE
+    // ==================================================
+
+    const liveNormalizada =
+        normalizarTexto(
+            liveInformada
+        );
+
+    let fazLive = false;
+    let linkLive = null;
+
+    const respostasNegativas = [
+        "nao",
+        "n",
+        "não",
+        "no",
+        "false"
+    ];
+
+    if (
+        respostasNegativas.includes(
+            liveNormalizada
+        )
+    ) {
+
+        fazLive = false;
+        linkLive = null;
+
+    } else {
+
+        try {
+
+            const url =
+                new URL(
+                    liveInformada
+                );
+
+            if (
+                ![
+                    "http:",
+                    "https:"
+                ].includes(
+                    url.protocol
+                )
+            ) {
+
+                throw new Error(
+                    "Protocolo inválido."
+                );
+
+            }
+
+            fazLive = true;
+            linkLive =
+                liveInformada;
+
+        } catch {
+
+            throw new Error(
+                "Se você faz live, informe o link completo do seu canal. Caso não faça, escreva apenas \"Não\"."
+            );
+
+        }
+
+    }
+
+    // ==================================================
+    // VALIDAR SERVIDOR
+    // ==================================================
 
     if (!interaction.guild) {
 
@@ -74,14 +231,15 @@ async function registrar(interaction, dados) {
 
     try {
 
-        membro = await interaction.guild.members.fetch(
-            interaction.user.id
-        );
+        membro =
+            await interaction.guild.members.fetch(
+                interaction.user.id
+            );
 
     } catch (error) {
 
         console.error(
-            "Erro ao buscar integrante durante o registro:",
+            "Erro ao localizar integrante durante o registro:",
             error
         );
 
@@ -92,399 +250,566 @@ async function registrar(interaction, dados) {
     }
 
     // ==================================================
-    // VALIDAR CARGO TREINAMENTO
+    // VERIFICAR SE JÁ É INTEGRANTE
     // ==================================================
 
-    const cargoTreinamentoId =
-        settings.cargos?.treinamento;
+    const cadastroExistente =
+        await new Promise(
+            (resolve, reject) => {
 
-    if (!cargoTreinamentoId) {
+                db.get(
+                    `
+                        SELECT discordId
+                        FROM membros
+                        WHERE discordId = ?
+                    `,
+                    [
+                        interaction.user.id
+                    ],
+                    (
+                        error,
+                        row
+                    ) => {
 
-        throw new Error(
-            "O ID do cargo Treinamento não está configurado no settings.json."
-        );
+                        if (error) {
 
-    }
+                            return reject(
+                                error
+                            );
 
-    const cargoTreinamento =
-        await interaction.guild.roles
-            .fetch(cargoTreinamentoId)
-            .catch(() => null);
+                        }
 
-    if (!cargoTreinamento) {
+                        resolve(
+                            row || null
+                        );
 
-        throw new Error(
-            "O cargo Treinamento não foi encontrado no servidor. Verifique o ID no settings.json."
-        );
-
-    }
-
-    // ==================================================
-    // VALIDAR POSIÇÃO DO BOT
-    // ==================================================
-
-    const membroBot =
-        interaction.guild.members.me;
-
-    if (!membroBot) {
-
-        throw new Error(
-            "Não foi possível identificar o cargo do bot."
-        );
-
-    }
-
-    if (
-        membroBot.roles.highest.position <=
-        cargoTreinamento.position
-    ) {
-
-        throw new Error(
-            "O cargo do bot precisa estar acima do cargo Treinamento na lista de cargos do servidor."
-        );
-
-    }
-
-    // ==================================================
-    // VERIFICAR CADASTRO EXISTENTE
-    // ==================================================
-
-    const cadastroExistente = await new Promise(
-        (resolve, reject) => {
-
-            db.get(
-                "SELECT discordId FROM membros WHERE discordId = ?",
-                [interaction.user.id],
-                (error, row) => {
-
-                    if (error) {
-                        return reject(error);
                     }
+                );
 
-                    resolve(row);
-
-                }
-            );
-
-        }
-    ).catch(error => {
-
-        console.error(
-            "Erro ao verificar cadastro existente:",
-            error
+            }
         );
-
-        throw new Error(
-            `Erro ao consultar o banco de dados: ${error.message}`
-        );
-
-    });
 
     if (cadastroExistente) {
 
         throw new Error(
-            `Você já possui um registro no sistema da ${settings.mc.nome}.`
+            `Você já possui um registro aprovado no sistema da ${settings.mc.nome}.`
         );
 
     }
 
-    // ==================================================
-    // ALTERAR NICKNAME
-    // ==================================================
-
-    const nicknameAnterior =
-        membro.nickname;
-
-    try {
-
-        await membro.setNickname(
-            nomeCompleto,
-            `Registro realizado por ${interaction.user.tag}`
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao alterar nickname:",
-            error
-        );
-
-        if (
-            interaction.guild.ownerId ===
-            membro.id
-        ) {
-
-            throw new Error(
-                "O Discord não permite que o bot altere o apelido do dono do servidor."
-            );
-
-        }
-
-        throw new Error(
-            "Não foi possível alterar seu apelido. Coloque o cargo do bot acima do seu cargo e permita a opção Gerenciar Apelidos."
-        );
-
-    }
-
-       // ==================================================
-    // ADICIONAR CARGO TREINAMENTO
+           // ==================================================
+    // VERIFICAR SOLICITAÇÃO PENDENTE
     // ==================================================
 
-    try {
-
-        await membro.roles.add(
-            cargoTreinamento,
-            `Registro realizado por ${interaction.user.tag}`
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao adicionar cargo Treinamento:",
-            error
-        );
-
-        try {
-
-            await membro.setNickname(
-                nicknameAnterior
-            );
-
-        } catch {}
-
-        throw new Error(
-            "Não foi possível adicionar o cargo Treinamento. Verifique a posição do cargo do bot e a permissão Gerenciar Cargos."
-        );
-
-    }
-
-    // ==================================================
-    // SALVAR NO BANCO
-    // ==================================================
-
-    const dataRegistro =
-        new Date().toLocaleString("pt-BR");
-
-    try {
-
-        await executarBanco(
-            `INSERT INTO membros (
-                discordId,
-                nome,
-                vulgo,
-                sobrenome,
-                nomeCompleto,
-                secretario,
-                cargo,
-                advertencias,
-                promocoes,
-                rebaixamentos,
-                status,
-                dataRegistro,
-                ultimaPromocao,
-                ultimaAdvertencia
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                interaction.user.id,
-                nome,
-                vulgo,
-                sobrenome,
-                nomeCompleto,
-                secretario,
-                "Treinamento",
-                0,
-                0,
-                0,
-                "Ativo",
-                dataRegistro,
-                null,
-                null
-            ]
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao salvar registro no banco:",
-            error
-        );
-
-        // Desfaz as alterações no Discord caso o banco falhe.
-
-        try {
-
-            await membro.roles.remove(
-                cargoTreinamento
-            );
-
-        } catch {}
-
-        try {
-
-            await membro.setNickname(
-                nicknameAnterior
-            );
-
-        } catch {}
-
-        throw new Error(
-            `Não foi possível salvar o registro no banco de dados: ${error.message}`
-        );
-
-    }
-
-    // ==================================================
-    // ENVIAR LOG
-    // ==================================================
-
-    const canalLogsId =
-        settings.canais?.logs;
-
-    if (canalLogsId) {
-
-        try {
-
-            const canalLogs =
-                await interaction.guild.channels
-                    .fetch(canalLogsId);
-
-            if (
-                canalLogs &&
-                canalLogs.isTextBased()
-            ) {
-
-                await canalLogs.send({
-
-                    embeds: [
-
-                        {
-
-                            color:
-                                COLORS.VERDE,
-
-                            title:
-                                "📋 Novo Registro",
-
-                            thumbnail: {
-
-                                url:
-                                    interaction.user
-                                        .displayAvatarURL({
-                                            size: 256
-                                        })
-
-                            },
-
-                            fields: [
-
-                                {
-
-                                    name:
-                                        "👤 Integrante",
-
-                                    value:
-                                        nomeCompleto,
-
-                                    inline:
-                                        false
-
-                                },
-
-                                {
-
-                                    name:
-                                        "🤝 Recrutamento responsável",
-
-                                    value:
-                                        secretario,
-
-                                    inline:
-                                        true
-
-                                },
-
-                                {
-
-                                    name:
-                                        "🎖 Cargo",
-
-                                    value:
-                                        "Treinamento",
-
-                                    inline:
-                                        true
-
-                                },
-
-                                {
-
-                                    name:
-                                        "📌 Status",
-
-                                    value:
-                                        "Ativo",
-
-                                    inline:
-                                        true
-
-                                },
-
-                                {
-
-                                    name:
-                                        "💬 Discord",
-
-                                    value:
-                                        `${interaction.user}`,
-
-                                    inline:
-                                        false
-
-                                }
-
-                            ],
-
-                            footer: {
-
-                                text:
-                                    `${settings.mc.nome} • Sistema de Registro`
-
-                            },
-
-                            timestamp:
-                                new Date().toISOString()
+    const solicitacaoPendente =
+        await new Promise(
+            (resolve, reject) => {
+
+                db.get(
+                    `
+                        SELECT id
+                        FROM registrosPendentes
+                        WHERE discordId = ?
+                        AND status = 'Pendente'
+                    `,
+                    [
+                        interaction.user.id
+                    ],
+                    (
+                        error,
+                        row
+                    ) => {
+
+                        if (error) {
+
+                            return reject(
+                                error
+                            );
 
                         }
 
-                    ]
+                        resolve(
+                            row || null
+                        );
 
-                });
+                    }
+                );
 
             }
+        );
 
-        } catch (error) {
+    if (solicitacaoPendente) {
 
-            // O registro continua válido mesmo se o canal de logs falhar.
-
-            console.error(
-                "Registro concluído, mas houve erro ao enviar o log:",
-                error
-            );
-
-        }
+        throw new Error(
+            "Você já possui um registro aguardando análise."
+        );
 
     }
 
-    return {
+    // ==================================================
+    // SALVAR SOLICITAÇÃO NO BANCO
+    // ==================================================
 
-        nomeCompleto,
+    const dataSolicitacao =
+        new Date().toLocaleString(
+            "pt-BR"
+        );
 
-        cargo:
+    let registroId;
+
+    try {
+
+        const resultado =
+            await executarBanco(
+                `
+                    INSERT INTO registrosPendentes (
+
+                        discordId,
+                        nome,
+                        idCidade,
+                        recrutador,
+                        areaDesejada,
+                        fazLive,
+                        linkLive,
+                        status,
+                        criadoEm
+
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    interaction.user.id,
+                    nome,
+                    idCidade,
+                    recrutador,
+                    areaDesejada,
+                    fazLive ? 1 : 0,
+                    linkLive,
+                    "Pendente",
+                    dataSolicitacao
+                ]
+            );
+
+        registroId =
+            resultado.lastID;
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao salvar solicitação de registro:",
+            error
+        );
+
+        throw new Error(
+            `Não foi possível salvar sua solicitação: ${error.message}`
+        );
+
+    }
+
+    // ==================================================
+    // CANAL DE APROVAÇÃO
+    // ==================================================
+
+    const CANAL_APROVAR_REGISTRO =
+        "1535820712189890610";
+
+    const canalAprovacao =
+        interaction.guild.channels.cache.get(
+            CANAL_APROVAR_REGISTRO
+        ) ||
+        await interaction.guild.channels
+            .fetch(
+                CANAL_APROVAR_REGISTRO
+            )
+            .catch(() => null);
+
+    if (
+        !canalAprovacao ||
+        !canalAprovacao.isTextBased()
+    ) {
+
+        await executarBanco(
+            `
+                DELETE FROM registrosPendentes
+                WHERE id = ?
+            `,
+            [
+                registroId
+            ]
+        ).catch(() => {});
+
+        throw new Error(
+            "O canal de aprovação de registros não foi encontrado."
+        );
+
+    }
+
+    // ==================================================
+    // IMPORTS LOCAIS
+    // ==================================================
+
+    const {
+        EmbedBuilder,
+        ActionRowBuilder,
+        ButtonBuilder,
+        ButtonStyle,
+        StringSelectMenuBuilder
+    } = require("discord.js");
+
+    // ==================================================
+    // FICHA DE APROVAÇÃO
+    // ==================================================
+
+    const embed =
+        new EmbedBuilder()
+
+            .setColor(
+                COLORS.VERDE
+            )
+
+            .setTitle(
+                `📋 SOLICITAÇÃO DE REGISTRO — ${nome.toUpperCase()}`
+            )
+
+            .setThumbnail(
+                interaction.user.displayAvatarURL({
+                    size: 256
+                })
+            )
+
+            .addFields(
+
+                {
+                    name:
+                        "👤 Nome",
+
+                    value:
+                        nome,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🆔 ID",
+
+                    value:
+                        idCidade,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🤝 Quem recrutou",
+
+                    value:
+                        recrutador,
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        "🎯 Área desejada",
+
+                    value:
+                        areaDesejada,
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "📺 Faz live?",
+
+                    value:
+                        fazLive
+                            ? "Sim"
+                            : "Não",
+
+                    inline:
+                        true
+                },
+
+                {
+                    name:
+                        "🔗 Canal",
+
+                    value:
+                        fazLive
+                            ? linkLive
+                            : "Não informado",
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        "💬 Discord",
+
+                    value:
+                        `${interaction.user}`,
+
+                    inline:
+                        false
+                },
+
+                {
+                    name:
+                        "📌 Status",
+
+                    value:
+                        "🟡 Aguardando análise",
+
+                    inline:
+                        false
+                }
+
+            )
+
+            .setFooter({
+
+                text:
+                    `${settings.mc.nome} • Aprovação de Registro`
+
+            })
+
+            .setTimestamp();
+
+    // ==================================================
+    // SELETOR DE CARGO
+    // ==================================================
+
+    const menuCargo =
+        new StringSelectMenuBuilder()
+
+            .setCustomId(
+                `registro_cargo_${registroId}`
+            )
+
+            .setPlaceholder(
+                "Selecione o cargo que será concedido"
+            )
+
+            .addOptions(
+
+    {
+        label:
+            "Elite Teste",
+
+        value:
+            settings.cargos.eliteTeste,
+
+        emoji:
+            "🧪"
+    },
+
+    {
+        label:
             "Treinamento",
 
+        value:
+            settings.cargos.treinamento,
+
+        emoji:
+            "🎓"
+    },
+
+    {
+        label:
+            "Membro",
+
+        value:
+            settings.cargos.membro,
+
+        emoji:
+            "🤝"
+    },
+
+    {
+        label:
+            "Recrutamento",
+
+        value:
+            settings.cargos.recrutamento,
+
+        emoji:
+            "📋"
+    },
+
+    {
+        label:
+            "Resp. Eventos",
+
+        value:
+            settings.cargos.respEventos,
+
+        emoji:
+            "📅"
+    },
+
+    {
+        label:
+            "Resp. Elite",
+
+        value:
+            settings.cargos.respElite,
+
+        emoji:
+            "⚔️"
+    },
+
+    {
+        label:
+            "Gerência",
+
+        value:
+            settings.cargos.gerencia,
+
+        emoji:
+            "🛡️"
+    },
+
+    {
+        label:
+            "Vice Liderança",
+
+        value:
+            settings.cargos.viceLideranca,
+
+        emoji:
+            "👑"
+    },
+
+    {
+        label:
+            "Liderança",
+
+        value:
+            settings.cargos.lideranca,
+
+        emoji:
+            "⭐"
+    }
+
+);
+
+    const linhaCargo =
+        new ActionRowBuilder()
+            .addComponents(
+                menuCargo
+            );
+
+    // ==================================================
+    // BOTÕES DE APROVAR / REPROVAR
+    // ==================================================
+
+    const linhaAcoes =
+        new ActionRowBuilder()
+
+            .addComponents(
+
+                new ButtonBuilder()
+
+                    .setCustomId(
+                        `registro_aprovar_${registroId}`
+                    )
+
+                    .setLabel(
+                        "Aprovar"
+                    )
+
+                    .setEmoji(
+                        "✅"
+                    )
+
+                    .setStyle(
+                        ButtonStyle.Success
+                    ),
+
+                new ButtonBuilder()
+
+                    .setCustomId(
+                        `registro_reprovar_${registroId}`
+                    )
+
+                    .setLabel(
+                        "Reprovar"
+                    )
+
+                    .setEmoji(
+                        "❌"
+                    )
+
+                    .setStyle(
+                        ButtonStyle.Danger
+                    )
+
+            );
+
+    const mensagem =
+        await canalAprovacao.send({
+
+            embeds: [
+                embed
+            ],
+
+            components: [
+                linhaCargo,
+                linhaAcoes
+            ]
+
+        });
+
+    // ==================================================
+    // SALVAR MENSAGEM DE APROVAÇÃO
+    // ==================================================
+
+    await executarBanco(
+        `
+            UPDATE registrosPendentes
+
+            SET
+                canalAprovacaoId = ?,
+                mensagemAprovacaoId = ?
+
+            WHERE id = ?
+        `,
+        [
+            canalAprovacao.id,
+            mensagem.id,
+            registroId
+        ]
+    );
+
+    // ==================================================
+    // RETORNO
+    // ==================================================
+
+    return {
+
+        registroId,
+
+        nome,
+
+        idCidade,
+
+        recrutador,
+
+        areaDesejada,
+
+        fazLive,
+
+        linkLive,
+
         status:
-            "Ativo"
+            "Pendente"
 
     };
 

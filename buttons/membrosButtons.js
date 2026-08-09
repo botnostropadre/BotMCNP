@@ -60,15 +60,7 @@ function criarMenuMembros() {
 
                     .setLabel("🚪 Desligar")
 
-                    .setStyle(ButtonStyle.Danger),
-
-                new ButtonBuilder()
-
-                    .setCustomId("dashboard")
-
-                    .setLabel("⬅ Voltar")
-
-                    .setStyle(ButtonStyle.Secondary)
+                    .setStyle(ButtonStyle.Danger)
 
             )
 

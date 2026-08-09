@@ -9,11 +9,6 @@
         "rebaixamentos": "1532120142857769142"
     },
 
-    "paineis": {
-        "financeiro": "",
-        "dashboard": ""
-    },
-
     "cargos": {
         "lideranca": "1530456364059721823",
         "gerencia": "1530468429008601118",
@@ -21,7 +16,11 @@
         "respEventos": "1530456770382794773",
         "recrutamento": "1530457451843813536",
         "membro": "1530458236048642068",
-        "treinamento": "1530458943116148896"
+        "treinamento": "1530458943116148896",
+
+        "elite": "1535011230425681931",
+        "eventos": "1535011850133962842",
+        "farm": "1535012420421156987"
     },
 
     "nickname": "{nome} \"{vulgo}\" {sobrenome}",

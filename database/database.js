@@ -180,26 +180,39 @@ async function iniciarBanco() {
                 discordId TEXT UNIQUE,
 
                 nome TEXT,
-                vulgo TEXT,
-                sobrenome TEXT,
-                nomeCompleto TEXT,
+
+                idCidade TEXT,
 
                 recrutador TEXT,
+
+                areaDesejada TEXT,
+
+                fazLive INTEGER DEFAULT 0,
+
+                linkLive TEXT,
 
                 cargo TEXT,
 
                 advertencias INTEGER DEFAULT 0,
+
                 promocoes INTEGER DEFAULT 0,
+
                 rebaixamentos INTEGER DEFAULT 0,
 
                 status TEXT DEFAULT 'Ativo',
 
                 dataRegistro TEXT,
+
                 ultimaPromocao TEXT,
+
                 ultimaAdvertencia TEXT
 
             )
         `);
+
+        // ==================================================
+        // GARANTIR COLUNAS — MEMBROS
+        // ==================================================
 
         await garantirColuna(
             "membros",
@@ -209,32 +222,38 @@ async function iniciarBanco() {
 
         await garantirColuna(
             "membros",
-            "vulgo",
+            "idCidade",
             "TEXT"
         );
 
         await garantirColuna(
             "membros",
-            "sobrenome",
+            "recrutador",
             "TEXT"
         );
 
         await garantirColuna(
             "membros",
-            "nomeCompleto",
+            "areaDesejada",
             "TEXT"
         );
 
         await garantirColuna(
             "membros",
-            "secretario",
+            "fazLive",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "membros",
+            "linkLive",
             "TEXT"
         );
 
         await garantirColuna(
             "membros",
             "cargo",
-            "TEXT DEFAULT 'Treinamento'"
+            "TEXT"
         );
 
         await garantirColuna(
@@ -280,6 +299,173 @@ async function iniciarBanco() {
         );
 
         // ==================================================
+        // REGISTROS PENDENTES
+        // ==================================================
+
+        await executar(`
+            CREATE TABLE IF NOT EXISTS registrosPendentes (
+
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                discordId TEXT NOT NULL,
+
+                nome TEXT NOT NULL,
+
+                idCidade TEXT NOT NULL,
+
+                recrutador TEXT NOT NULL,
+
+                areaDesejada TEXT NOT NULL,
+
+                fazLive INTEGER DEFAULT 0,
+
+                linkLive TEXT,
+
+                status TEXT NOT NULL DEFAULT 'Pendente',
+
+                cargoSelecionadoId TEXT,
+
+                cargoSelecionadoNome TEXT,
+
+                aprovadoPorId TEXT,
+
+                aprovadoPorNome TEXT,
+
+                resultadoEm TEXT,
+
+                criadoEm TEXT NOT NULL,
+
+                canalAprovacaoId TEXT,
+
+                mensagemAprovacaoId TEXT
+
+            )
+        `);
+
+        // ==================================================
+        // GARANTIR COLUNAS — REGISTROS PENDENTES
+        // ==================================================
+
+        await garantirColuna(
+            "registrosPendentes",
+            "discordId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "nome",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "idCidade",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "recrutador",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "areaDesejada",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "fazLive",
+            "INTEGER DEFAULT 0"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "linkLive",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "status",
+            "TEXT DEFAULT 'Pendente'"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "cargoSelecionadoId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "cargoSelecionadoNome",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "aprovadoPorId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "aprovadoPorNome",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "resultadoEm",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "criadoEm",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "canalAprovacaoId",
+            "TEXT"
+        );
+
+        await garantirColuna(
+            "registrosPendentes",
+            "mensagemAprovacaoId",
+            "TEXT"
+        );
+
+        // ==================================================
+        // ÍNDICES DOS REGISTROS PENDENTES
+        // ==================================================
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_registros_pendentes_discord
+            ON registrosPendentes (discordId)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_registros_pendentes_status
+            ON registrosPendentes (status)
+        `);
+
+        await executar(`
+            CREATE INDEX IF NOT EXISTS
+            idx_registros_pendentes_mensagem
+            ON registrosPendentes (mensagemAprovacaoId)
+        `);
+
+        
+        // ==================================================
         // ADVERTÊNCIAS
         // ==================================================
 
@@ -301,54 +487,7 @@ async function iniciarBanco() {
             )
         `);
 
-        // ==================================================
-        // FINANCEIRO
-        // ==================================================
-
-        await executar(`
-            CREATE TABLE IF NOT EXISTS financeiro (
-
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-                tipo TEXT,
-
-                categoria TEXT,
-
-                valor REAL,
-
-                descricao TEXT,
-
-                autor TEXT,
-
-                data TEXT
-
-            )
-        `);
-
-        // ==================================================
-        // HISTÓRICO FINANCEIRO
-        // ==================================================
-
-        await executar(`
-            CREATE TABLE IF NOT EXISTS historicoFinanceiro (
-
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-                tipo TEXT,
-
-                categoria TEXT,
-
-                valor REAL,
-
-                descricao TEXT,
-
-                responsavel TEXT,
-
-                data TEXT
-
-            )
-        `);
-
+        
         // ==================================================
         // PAINÉIS
         // ==================================================
