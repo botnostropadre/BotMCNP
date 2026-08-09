@@ -1684,15 +1684,15 @@ try {
 
                     .setTimestamp();
 
-            await interaction.message.edit({
+           await interaction.message.delete()
+    .catch(error => {
 
-                embeds: [
-                    embedAprovado
-                ],
+        console.error(
+            "Não foi possível apagar a ficha aprovada do canal de análise:",
+            error.message
+        );
 
-                components: []
-
-            });
+    });
 // ==================================================
 // DM DE APROVAÇÃO
 // ==================================================
@@ -2133,15 +2133,15 @@ await membro.send({
 
                 .setTimestamp();
 
-        await interaction.message.edit({
+       await interaction.message.delete()
+    .catch(error => {
 
-            embeds: [
-                embedReprovado
-            ],
+        console.error(
+            "Não foi possível apagar a ficha reprovada do canal de análise:",
+            error.message
+        );
 
-            components: []
-
-        });
+    });
 
         // ==================================================
         // DM DE REPROVAÇÃO
