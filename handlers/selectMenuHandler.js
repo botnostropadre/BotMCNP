@@ -2,7 +2,8 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    ActionRowBuilder
+    ActionRowBuilder,
+    StringSelectMenuBuilder
 } = require("discord.js");
 
 const {
@@ -275,19 +276,267 @@ if (
     return;
 
 }
-// ==================================================
-    // AÇÕES — SELECIONAR PORTE
-    // ==================================================
+// ======================================================
+// AÇÕES — SELECIONAR PORTE
+// ======================================================
 
-    if (
-        interaction.isStringSelectMenu() &&
-        interaction.customId ===
-        "acao_selecionar_porte"
-    ) {
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId ===
+    "acao_selecionar_porte"
+) {
 
-        // bloco novo aqui
+    try {
+
+        const porteSelecionado =
+            interaction.values[0];
+
+        const acoesDoPorte =
+            ACOES.filter(
+                acao =>
+                    acao.ativo !== false &&
+                    acao.porte === porteSelecionado
+            );
+
+        if (
+            acoesDoPorte.length === 0
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    `❌ Nenhuma ação de **${porteSelecionado} Porte** foi encontrada.`,
+
+                flags:
+                    64
+
+            });
+
+            return;
+
+        }
+
+        if (
+            acoesDoPorte.length > 25
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Existem ações demais cadastradas nesse porte para exibir em um único menu.",
+
+                flags:
+                    64
+
+            });
+
+            return;
+
+        }
+
+        const menuAcoes =
+            new StringSelectMenuBuilder()
+
+                .setCustomId(
+                    `acao_selecionar_${porteSelecionado
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase()}`
+                )
+
+                .setPlaceholder(
+                    `Escolha uma ação de ${porteSelecionado} Porte`
+                );
+
+        menuAcoes.addOptions(
+
+            acoesDoPorte.map(
+                acao => {
+
+                    return {
+
+                        label:
+                            acao.nome.substring(
+                                0,
+                                100
+                            ),
+
+                        description:
+                            `${acao.contingente} vagas + ${acao.reservas ?? 2} reservas`
+                                .substring(
+                                    0,
+                                    100
+                                ),
+
+                        value:
+                            acao.chave
+
+                    };
+
+                }
+            )
+
+        );
+
+        const row =
+            new ActionRowBuilder()
+
+                .addComponents(
+                    menuAcoes
+                );
+
+        await interaction.reply({
+
+            content:
+                `🎯 **${porteSelecionado} Porte**\nSelecione a ação que deseja marcar:`,
+
+            components: [
+                row
+            ],
+
+            flags:
+                64
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao selecionar porte da ação:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível carregar as ações desse porte.",
+
+                flags:
+                    64
+
+            }).catch(() => {});
+
+        }
 
     }
+
+    return;
+
+}
+// ======================================================
+// AÇÕES — SELECIONAR AÇÃO
+// ======================================================
+
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId.startsWith(
+        "acao_selecionar_"
+    ) &&
+    interaction.customId !==
+        "acao_selecionar_porte"
+) {
+
+    const chaveAcao =
+        interaction.values[0];
+
+    const acao =
+        ACOES.find(
+            item =>
+                item.chave === chaveAcao &&
+                item.ativo !== false
+        );
+
+    if (!acao) {
+
+        await interaction.reply({
+
+            content:
+                "❌ A ação selecionada não foi encontrada.",
+
+            flags:
+                64
+
+        });
+
+        return;
+
+    }
+
+    const {
+        criarAcaoMarcada
+    } = require(
+        "../services/acaoService"
+    );
+
+    const acaoMarcada =
+        await criarAcaoMarcada({
+
+            acaoId:
+                (
+                    await new Promise(
+                        (resolve, reject) => {
+
+                            db.get(
+                                `
+                                    SELECT id
+                                    FROM acoes
+                                    WHERE chave = ?
+                                `,
+                                [
+                                    chaveAcao
+                                ],
+                                (
+                                    error,
+                                    row
+                                ) => {
+
+                                    if (error) {
+
+                                        return reject(
+                                            error
+                                        );
+
+                                    }
+
+                                    resolve(
+                                        row?.id || null
+                                    );
+
+                                }
+                            );
+
+                        }
+                    )
+                ),
+
+            criadoPorId:
+                interaction.user.id,
+
+            criadoPorNome:
+                interaction.user.username
+
+        });
+
+    await interaction.reply({
+
+        content:
+            `✅ Ação **${acao.nome}** criada com sucesso.\n\n` +
+            `ID interno: **${acaoMarcada.id}**\n\n` +
+            "Na próxima etapa ela será publicada automaticamente no canal de Ações Marcadas.",
+
+        flags:
+            64
+
+    });
+
+    return;
+
+}
     // ==================================================
     // MENU VISUAL DO EMBED
     // ==================================================
