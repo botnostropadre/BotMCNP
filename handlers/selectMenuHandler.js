@@ -28,6 +28,17 @@ const settings = require("../config/settings.json");
 const {
     ACOES
 } = require("../config/acoes");
+const {
+    criarAcaoMarcadaEmbed
+} = require("../embeds/acaoMarcadaEmbed");
+
+const {
+    criarAcaoParticipacaoButtons
+} = require("../buttons/acaoParticipacaoButtons");
+
+const {
+    criarAcaoMarcada
+} = require("../services/acaoService");
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
@@ -441,98 +452,258 @@ if (
         "acao_selecionar_porte"
 ) {
 
-    const chaveAcao =
-        interaction.values[0];
+    try {
 
-    const acao =
-        ACOES.find(
-            item =>
-                item.chave === chaveAcao &&
-                item.ativo !== false
-        );
+        // ==============================================
+        // LOCALIZAR AÇÃO NO CATÁLOGO
+        // ==============================================
 
-    if (!acao) {
+        const chaveAcao =
+            interaction.values[0];
 
-        await interaction.reply({
+        const acao =
+            ACOES.find(
+                item =>
+                    item.chave === chaveAcao &&
+                    item.ativo !== false
+            );
 
-            content:
-                "❌ A ação selecionada não foi encontrada.",
+        if (!acao) {
 
-            flags:
-                64
+            await interaction.reply({
 
-        });
+                content:
+                    "❌ A ação selecionada não foi encontrada.",
 
-        return;
+                flags:
+                    64
 
-    }
+            });
 
-    const {
-        criarAcaoMarcada
-    } = require(
-        "../services/acaoService"
-    );
+            return;
 
-    const acaoMarcada =
-        await criarAcaoMarcada({
+        }
 
-            acaoId:
-                (
-                    await new Promise(
-                        (resolve, reject) => {
+        // ==============================================
+        // LOCALIZAR AÇÃO NO BANCO
+        // ==============================================
 
-                            db.get(
-                                `
-                                    SELECT id
-                                    FROM acoes
-                                    WHERE chave = ?
-                                `,
-                                [
-                                    chaveAcao
-                                ],
-                                (
-                                    error,
-                                    row
-                                ) => {
+        const acaoBanco =
+            await new Promise(
+                (resolve, reject) => {
 
-                                    if (error) {
+                    db.get(
+                        `
+                            SELECT *
+                            FROM acoes
+                            WHERE chave = ?
+                        `,
+                        [
+                            chaveAcao
+                        ],
+                        (
+                            error,
+                            row
+                        ) => {
 
-                                        return reject(
-                                            error
-                                        );
+                            if (error) {
 
-                                    }
+                                return reject(
+                                    error
+                                );
 
-                                    resolve(
-                                        row?.id || null
-                                    );
+                            }
 
-                                }
+                            resolve(
+                                row || null
                             );
 
                         }
-                    )
-                ),
+                    );
 
-            criadoPorId:
-                interaction.user.id,
+                }
+            );
 
-            criadoPorNome:
-                interaction.user.username
+        if (!acaoBanco) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Essa ação ainda não foi sincronizada com o banco de dados.",
+
+                flags:
+                    64
+
+            });
+
+            return;
+
+        }
+
+        // ==============================================
+        // CRIAR AÇÃO MARCADA NO BANCO
+        // ==============================================
+
+        const acaoMarcada =
+            await criarAcaoMarcada({
+
+                acaoId:
+                    acaoBanco.id,
+
+                criadoPorId:
+                    interaction.user.id,
+
+                criadoPorNome:
+                    interaction.user.username
+
+            });
+
+        // ==============================================
+        // LOCALIZAR CANAL AÇÕES MARCADAS
+        // ==============================================
+
+        const CANAL_ACOES_MARCADAS =
+            "1536490600986058803";
+
+        const canal =
+            interaction.guild.channels.cache.get(
+                CANAL_ACOES_MARCADAS
+            ) ||
+            await interaction.guild.channels
+                .fetch(
+                    CANAL_ACOES_MARCADAS
+                )
+                .catch(() => null);
+
+        if (
+            !canal ||
+            !canal.isTextBased()
+        ) {
+
+            throw new Error(
+                "Canal de ações marcadas não encontrado."
+            );
+
+        }
+
+        // ==============================================
+        // MONTAR DADOS DO EMBED
+        // ==============================================
+
+        const dadosEmbed = {
+
+            ...acao,
+
+            nomeAcao:
+                acao.nome
+
+        };
+
+        const embed =
+            criarAcaoMarcadaEmbed(
+                dadosEmbed,
+                []
+            );
+
+        const componentes =
+            criarAcaoParticipacaoButtons(
+                acaoMarcada.id
+            );
+
+        // ==============================================
+        // PUBLICAR AÇÃO
+        // ==============================================
+
+        const mensagem =
+            await canal.send({
+
+                embeds: [
+                    embed
+                ],
+
+                components:
+                    componentes
+
+            });
+
+        // ==============================================
+        // SALVAR ID DA MENSAGEM
+        // ==============================================
+
+        await new Promise(
+            (resolve, reject) => {
+
+                db.run(
+                    `
+                        UPDATE acoesMarcadas
+
+                        SET
+                            mensagemId = ?,
+                            canalId = ?
+
+                        WHERE id = ?
+                    `,
+                    [
+                        mensagem.id,
+                        canal.id,
+                        acaoMarcada.id
+                    ],
+                    function (error) {
+
+                        if (error) {
+
+                            return reject(
+                                error
+                            );
+
+                        }
+
+                        resolve(this);
+
+                    }
+                );
+
+            }
+        );
+
+        // ==============================================
+        // CONFIRMAR PARA QUEM MARCOU
+        // ==============================================
+
+        await interaction.update({
+
+            content:
+                `✅ Ação **${acao.nome}** marcada com sucesso.\nA ficha foi criada em ${canal}.`,
+
+            components: []
 
         });
 
-    await interaction.reply({
+    } catch (error) {
 
-        content:
-            `✅ Ação **${acao.nome}** criada com sucesso.\n\n` +
-            `ID interno: **${acaoMarcada.id}**\n\n` +
-            "Na próxima etapa ela será publicada automaticamente no canal de Ações Marcadas.",
+        console.error(
+            "Erro ao marcar ação:",
+            error
+        );
 
-        flags:
-            64
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
 
-    });
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível marcar essa ação.",
+
+                flags:
+                    64
+
+            }).catch(() => {});
+
+        }
+
+    }
 
     return;
 
