@@ -1049,48 +1049,297 @@ await garantirColuna(
         );
 
                 // ==================================================
-        // ÍNDICES DOS PARCEIROS
-        // ==================================================
+// ÍNDICES DOS PARCEIROS
+// ==================================================
 
-        await executar(`
-            CREATE INDEX IF NOT EXISTS
-            idx_parceiros_categoria
-            ON parceiros (categoria)
-        `);
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_parceiros_categoria
+    ON parceiros (categoria)
+`);
 
-        await executar(`
-            CREATE INDEX IF NOT EXISTS
-            idx_parceiro_produtos_parceiro
-            ON parceiroProdutos (parceiroId)
-        `);
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_parceiro_produtos_parceiro
+    ON parceiroProdutos (parceiroId)
+`);
 
-        console.log(
-            "✅ Estrutura do banco verificada e atualizada."
-        );
+// ==================================================
+// AÇÕES
+// ==================================================
 
-        console.log(
-            "✅ Estrutura do sistema de farm preparada."
-        );
+await executar(`
+    CREATE TABLE IF NOT EXISTS acoes (
 
-        console.log(
-            "✅ Estrutura do sistema de eventos preparada."
-        );
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        console.log(
-            "✅ Estrutura do sistema de parceiros preparada."
-        );
+        chave TEXT UNIQUE,
 
-    } catch (error) {
+        nome TEXT NOT NULL,
 
-        console.error(
-            "❌ Erro ao preparar o banco:",
-            error
-        );
+        porte TEXT NOT NULL,
 
-    }
+        contingente INTEGER NOT NULL,
+
+        reservas INTEGER DEFAULT 2,
+
+        armamento TEXT,
+
+        resumoRegras TEXT,
+
+        imagemPerimetro TEXT,
+
+        ativo INTEGER DEFAULT 1
+
+    )
+`);
+
+// ==================================================
+// AÇÕES MARCADAS
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS acoesMarcadas (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        acaoId INTEGER NOT NULL,
+
+        mensagemId TEXT UNIQUE,
+
+        canalId TEXT,
+
+        status TEXT DEFAULT 'Aberta',
+
+        criadoPorId TEXT,
+
+        criadoPorNome TEXT,
+
+        criadoEm TEXT,
+
+        finalizadoPorId TEXT,
+
+        finalizadoPorNome TEXT,
+
+        finalizadoEm TEXT
+
+    )
+`);
+
+// ==================================================
+// PARTICIPANTES DAS AÇÕES
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS acoesParticipantes (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        acaoMarcadaId INTEGER NOT NULL,
+
+        discordId TEXT NOT NULL,
+
+        nome TEXT NOT NULL,
+
+        ordem INTEGER NOT NULL,
+
+        tipo TEXT NOT NULL,
+
+        participou INTEGER DEFAULT 1,
+
+        UNIQUE (
+            acaoMarcadaId,
+            discordId
+        )
+
+    )
+`);
+
+// ==================================================
+// RESULTADOS DAS AÇÕES
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS acoesResultados (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        acaoMarcadaId INTEGER UNIQUE NOT NULL,
+
+        resultado TEXT NOT NULL,
+
+        valorRendido REAL DEFAULT 0,
+
+        observacoes TEXT,
+
+        registradoPorId TEXT,
+
+        registradoPorNome TEXT,
+
+        registradoEm TEXT
+
+    )
+`);
+
+// ==================================================
+// KILLS DAS AÇÕES
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS acoesKills (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        acaoMarcadaId INTEGER NOT NULL,
+
+        discordId TEXT NOT NULL,
+
+        nome TEXT NOT NULL,
+
+        kills INTEGER DEFAULT 0,
+
+        UNIQUE (
+            acaoMarcadaId,
+            discordId
+        )
+
+    )
+`);
+
+// ==================================================
+// PAINEL DE AÇÕES
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS painelAcoes (
+
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+
+        canalId TEXT,
+
+        mensagemId TEXT,
+
+        ultimaAtualizacao TEXT
+
+    )
+`);
+
+// ==================================================
+// PAINEL — RESUMO DOS PVPS
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS painelResumoPvp (
+
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+
+        canalId TEXT,
+
+        mensagemId TEXT,
+
+        ultimaAtualizacao TEXT
+
+    )
+`);
+
+// ==================================================
+// PAINEL — ESTATÍSTICAS GERAIS
+// ==================================================
+
+await executar(`
+    CREATE TABLE IF NOT EXISTS painelEstatisticasGerais (
+
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+
+        canalId TEXT,
+
+        mensagemId TEXT,
+
+        ultimaAtualizacao TEXT
+
+    )
+`);
+
+// ==================================================
+// ÍNDICES DAS AÇÕES
+// ==================================================
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_porte
+    ON acoes (porte)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_ativo
+    ON acoes (ativo)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_marcadas_status
+    ON acoesMarcadas (status)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_participantes_acao
+    ON acoesParticipantes (acaoMarcadaId)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_participantes_usuario
+    ON acoesParticipantes (discordId)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_kills_acao
+    ON acoesKills (acaoMarcadaId)
+`);
+
+await executar(`
+    CREATE INDEX IF NOT EXISTS
+    idx_acoes_kills_usuario
+    ON acoesKills (discordId)
+`);
+
+// ==================================================
+// LOGS DE INICIALIZAÇÃO
+// ==================================================
+
+console.log(
+    "✅ Estrutura do banco verificada e atualizada."
+);
+
+console.log(
+    "✅ Estrutura do sistema de farm preparada."
+);
+
+console.log(
+    "✅ Estrutura do sistema de eventos preparada."
+);
+
+console.log(
+    "✅ Estrutura do sistema de parceiros preparada."
+);
+
+console.log(
+    "✅ Estrutura do sistema de ações e PVP preparada."
+);
+
+} catch (error) {
+
+    console.error(
+        "❌ Erro ao preparar o banco:",
+        error
+    );
 
 }
 
+}
 
 // ======================================================
 // EXPORTAÇÃO
