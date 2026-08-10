@@ -83,6 +83,19 @@ const {
 const db = require("../database/database");
 
 // ======================================================
+// SISTEMA DE AÇÕES
+// ======================================================
+
+const {
+    adicionarParticipanteAcao,
+    removerParticipanteAcao
+} = require("../services/acaoService");
+
+const {
+    atualizarAcao
+} = require("../services/atualizarAcao");
+
+// ======================================================
 // SISTEMA DE PARCEIROS
 // ======================================================
 
@@ -135,6 +148,316 @@ async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
 
+        // ==================================================
+    // AÇÕES — CONFIRMAR PRESENÇA
+    // ==================================================
+
+    if (
+        interaction.customId.startsWith(
+            "acao_participar_"
+        )
+    ) {
+
+        await interaction.deferReply({
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        try {
+
+            const acaoMarcadaId =
+                Number(
+                    interaction.customId.replace(
+                        "acao_participar_",
+                        ""
+                    )
+                );
+
+            if (
+                !Number.isInteger(
+                    acaoMarcadaId
+                ) ||
+                acaoMarcadaId <= 0
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Identificador da ação inválido."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            const nomeExibicao =
+                interaction.member?.displayName ||
+                interaction.user.globalName ||
+                interaction.user.username;
+
+            const resultado =
+                await adicionarParticipanteAcao({
+
+                    acaoMarcadaId,
+
+                    discordId:
+                        interaction.user.id,
+
+                    nome:
+                        nomeExibicao
+
+                });
+
+            // ==========================================
+            // AÇÃO ENCERRADA
+            // ==========================================
+
+            if (
+                resultado.status ===
+                "encerrada"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Essa ação não está mais recebendo participantes."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // JÁ INSCRITO
+            // ==========================================
+
+            if (
+                resultado.status ===
+                "ja_inscrito"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "⚠️ Você já confirmou presença nesta ação."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // AÇÃO LOTADA
+            // ==========================================
+
+            if (
+                resultado.status ===
+                "lotado"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ As vagas de titulares e reservas já estão completas."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // ATUALIZAR EMBED
+            // ==========================================
+
+            await atualizarAcao(
+                interaction,
+                acaoMarcadaId
+            );
+
+            // ==========================================
+            // RESPOSTA
+            // ==========================================
+
+            if (
+                resultado.status ===
+                "titular"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        `✅ Presença confirmada!\n\n` +
+                        `🎯 Você entrou como **TITULAR**.\n` +
+                        `📌 Posição: **${resultado.ordem}**`
+
+                });
+
+            } else {
+
+                await interaction.editReply({
+
+                    content:
+                        `✅ Presença confirmada!\n\n` +
+                        `🪑 Você entrou como **RESERVA**.\n` +
+                        `📌 Posição geral: **${resultado.ordem}**`
+
+                });
+
+            }
+
+            apagarResposta(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao confirmar presença na ação:",
+                error
+            );
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Não foi possível confirmar sua presença na ação."
+
+            }).catch(() => {});
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
+
+        // ==================================================
+    // AÇÕES — SAIR DA AÇÃO
+    // ==================================================
+
+    if (
+        interaction.customId.startsWith(
+            "acao_sair_"
+        )
+    ) {
+
+        await interaction.deferReply({
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        try {
+
+            const acaoMarcadaId =
+                Number(
+                    interaction.customId.replace(
+                        "acao_sair_",
+                        ""
+                    )
+                );
+
+            if (
+                !Number.isInteger(
+                    acaoMarcadaId
+                ) ||
+                acaoMarcadaId <= 0
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "❌ Identificador da ação inválido."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            const resultado =
+                await removerParticipanteAcao(
+                    acaoMarcadaId,
+                    interaction.user.id
+                );
+
+            // ==========================================
+            // NÃO ESTAVA INSCRITO
+            // ==========================================
+
+            if (
+                resultado.status ===
+                "nao_inscrito"
+            ) {
+
+                await interaction.editReply({
+
+                    content:
+                        "⚠️ Você não está inscrito nesta ação."
+
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // ATUALIZAR EMBED
+            // ==========================================
+
+            await atualizarAcao(
+                interaction,
+                acaoMarcadaId
+            );
+
+            await interaction.editReply({
+
+                content:
+                    "✅ Você saiu da ação.\n\n" +
+                    "As posições da equipe foram reorganizadas automaticamente."
+
+            });
+
+            apagarResposta(interaction);
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao sair da ação:",
+                error
+            );
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Não foi possível remover sua participação da ação."
+
+            }).catch(() => {});
+
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
     // ==================================================
     // CRIAR EVENTO
     // ==================================================
