@@ -142,21 +142,96 @@ for (
 client.once(
     "clientReady",
     async () => {
+
         try {
 
-    await bancoPronto;
-    await carregarAcoes();
+            // ==========================================
+            // AGUARDAR BANCO
+            // ==========================================
 
-} catch (error) {
+            console.log(
+                "⏳ Aguardando inicialização do banco..."
+            );
 
-    console.error(
-        "❌ Erro ao carregar catálogo de ações:",
-        error
-    );
+            await bancoPronto;
 
-}
+            console.log(
+                "✅ Banco inicializado."
+            );
 
-        console.clear();
+            // ==========================================
+            // CARREGAR CATÁLOGO DE AÇÕES
+            // ==========================================
+
+            console.log(
+                "⏳ Sincronizando catálogo de ações..."
+            );
+
+            const resultadoAcoes =
+                await carregarAcoes();
+
+            console.log(
+                `🎯 Sincronização concluída: ` +
+                `${resultadoAcoes.cadastradas} cadastrada(s), ` +
+                `${resultadoAcoes.erros} erro(s).`
+            );
+
+            // ==========================================
+            // CONFERIR QUANTAS AÇÕES ESTÃO NO SQLITE
+            // ==========================================
+
+            const totalAcoes =
+                await new Promise(
+                    (resolve, reject) => {
+
+                        database.get(
+                            `
+                                SELECT COUNT(*) AS total
+                                FROM acoes
+                            `,
+                            [],
+                            (
+                                error,
+                                row
+                            ) => {
+
+                                if (error) {
+
+                                    return reject(
+                                        error
+                                    );
+
+                                }
+
+                                resolve(
+                                    row?.total || 0
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+            console.log(
+                `📊 Ações existentes no banco: ${totalAcoes}`
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Erro ao preparar banco/catálogo de ações:"
+            );
+
+            console.error(
+                error
+            );
+
+        }
+
+        // ==========================================
+        // BOT ONLINE
+        // ==========================================
 
         console.log(
             "======================================"
