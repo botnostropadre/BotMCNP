@@ -12,7 +12,12 @@ const path = require("path");
 
 const settings = require("./config/settings.json");
 
-require("./database/database");
+const database =
+    require("./database/database");
+
+const {
+    bancoPronto
+} = database;
 
 const {
     handleButton
@@ -41,6 +46,9 @@ const {
 const {
     handleRebaixarMenu
 } = require("./selectMenus/rebaixarMenu");
+const {
+    carregarAcoes
+} = require("./services/carregarAcoes");
 
 // ======================================================
 // CRIAR CLIENTE
@@ -133,7 +141,20 @@ for (
 
 client.once(
     "clientReady",
-    () => {
+    async () => {
+        try {
+
+    await bancoPronto;
+    await carregarAcoes();
+
+} catch (error) {
+
+    console.error(
+        "❌ Erro ao carregar catálogo de ações:",
+        error
+    );
+
+}
 
         console.clear();
 
