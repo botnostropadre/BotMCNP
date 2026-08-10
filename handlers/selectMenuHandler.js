@@ -24,6 +24,9 @@ const {
 const db = require("../database/database");
 
 const settings = require("../config/settings.json");
+const {
+    ACOES
+} = require("../config/acoes");
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
@@ -272,6 +275,19 @@ if (
     return;
 
 }
+// ==================================================
+    // AÇÕES — SELECIONAR PORTE
+    // ==================================================
+
+    if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId ===
+        "acao_selecionar_porte"
+    ) {
+
+        // bloco novo aqui
+
+    }
     // ==================================================
     // MENU VISUAL DO EMBED
     // ==================================================
