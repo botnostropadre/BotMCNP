@@ -678,7 +678,89 @@ if (
             );
 
         }
+// ==================================================
+// AÇÕES — CANCELAR FINALIZAÇÃO
+// ==================================================
 
+if (
+    interaction.customId.startsWith(
+        "acao_finalizacao_cancelar_"
+    )
+) {
+
+    try {
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_finalizacao_cancelar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Identificador da ação inválido.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        await interaction.update({
+
+            content:
+`❌ **Finalização cancelada.**
+
+A ação continua aberta normalmente.
+
+Você pode voltar ao painel da ação e finalizar novamente quando desejar.`,
+
+            components: []
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao cancelar finalização da ação:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível cancelar a finalização.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            }).catch(() => {});
+
+        }
+
+    }
+
+    return;
+
+}
         // ==========================================
         // BUSCAR PARTICIPANTES
         // ==========================================
