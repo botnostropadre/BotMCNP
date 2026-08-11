@@ -229,6 +229,7 @@ async function atualizarPainelEditor(
 async function handleModal(interaction) {
 
     if (!interaction.isModalSubmit()) return;
+
 // ==================================================
 // AÇÕES — REGISTRAR KILLS DO PARTICIPANTE
 // ==================================================
@@ -297,7 +298,7 @@ if (
         }
 
         // ==========================================
-        // KILLS INFORMADAS
+        // KILLS
         // ==========================================
 
         const killsTexto =
@@ -366,7 +367,7 @@ if (
         }
 
         // ==========================================
-        // SALVAR / ATUALIZAR KILLS
+        // SALVAR KILLS
         // ==========================================
 
         await registrarKillsParticipante({
@@ -552,6 +553,436 @@ Selecione o próximo integrante abaixo:`,
     return;
 
 }
+
+// ==================================================
+// AÇÕES — PRIMEIRA ETAPA DA FINALIZAÇÃO
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "acao_finalizar_modal_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        // ==========================================
+        // IDENTIFICAR AÇÃO
+        // ==========================================
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_finalizar_modal_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0
+        ) {
+
+            throw new Error(
+                "Identificador da ação inválido."
+            );
+
+        }
+
+        // ==========================================
+        // RESULTADO
+        // ==========================================
+
+        const resultadoTexto =
+            interaction.fields
+                .getTextInputValue(
+                    "resultado"
+                )
+                .trim()
+                .toLowerCase();
+
+        let resultadoFinal;
+
+        if (
+            [
+                "vitoria",
+                "vitória",
+                "ganhou",
+                "ganhamos",
+                "win"
+            ].includes(
+                resultadoTexto
+            )
+        ) {
+
+            resultadoFinal =
+                "Vitória";
+
+        } else if (
+            [
+                "derrota",
+                "perdeu",
+                "perdemos",
+                "loss"
+            ].includes(
+                resultadoTexto
+            )
+        ) {
+
+            resultadoFinal =
+                "Derrota";
+
+        } else {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Resultado inválido.\n\n" +
+                    "Informe apenas **Vitória** ou **Derrota**."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // VALOR
+        // ==========================================
+
+        const valorTexto =
+            interaction.fields
+                .getTextInputValue(
+                    "valor"
+                )
+                .trim();
+
+        let valorLimpo =
+            valorTexto
+                .replace(
+                    /R\$/gi,
+                    ""
+                )
+                .replace(
+                    /\s/g,
+                    ""
+                );
+
+        // ==========================================
+        // TRATAR FORMATAÇÃO BRASILEIRA
+        // ==========================================
+
+        if (
+            valorLimpo.includes(",")
+        ) {
+
+            valorLimpo =
+                valorLimpo
+                    .replace(
+                        /\./g,
+                        ""
+                    )
+                    .replace(
+                        ",",
+                        "."
+                    );
+
+        } else {
+
+            valorLimpo =
+                valorLimpo.replace(
+                    /[^0-9.-]/g,
+                    ""
+                );
+
+        }
+
+        const valorRendido =
+            Number(
+                valorLimpo
+            );
+
+        if (
+            !Number.isFinite(
+                valorRendido
+            ) ||
+            valorRendido < 0
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Informe um valor válido para o rendimento da ação.\n\n" +
+                    "Exemplo: **1500000**"
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // OBSERVAÇÕES
+        // ==========================================
+
+        let observacoes =
+            "";
+
+        try {
+
+            observacoes =
+                interaction.fields
+                    .getTextInputValue(
+                        "observacoes"
+                    )
+                    .trim();
+
+        } catch {
+
+            observacoes =
+                "";
+
+        }
+
+        // ==========================================
+        // BUSCAR AÇÃO
+        // ==========================================
+
+        const acao =
+            await buscarAcaoMarcada(
+                acaoMarcadaId
+            );
+
+        if (!acao) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Essa ação não foi encontrada."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        if (
+            acao.status !==
+            "Aberta"
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "⚠️ Essa ação já foi encerrada ou não está mais disponível."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // PARTICIPANTES
+        // ==========================================
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const participantesReais =
+            participantes.filter(
+                participante =>
+                    Number(
+                        participante.participou
+                    ) === 1
+            );
+
+        if (
+            participantesReais.length === 0
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Não existem participantes titulares registrados nessa ação."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // SALVAR RESULTADO
+        // ==========================================
+
+        const resultadoSalvo =
+            await registrarResultadoAcao({
+
+                acaoMarcadaId,
+
+                resultado:
+                    resultadoFinal,
+
+                valorRendido,
+
+                observacoes,
+
+                registradoPorId:
+                    interaction.user.id,
+
+                registradoPorNome:
+                    interaction.user.username
+
+            });
+
+        if (
+            resultadoSalvo.status ===
+            "ja_finalizada"
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "⚠️ Essa ação já foi finalizada."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // BOTÕES
+        // ==========================================
+
+        const botoes =
+            new ActionRowBuilder()
+
+                .addComponents(
+
+                    new ButtonBuilder()
+
+                        .setCustomId(
+                            `acao_kills_iniciar_${acaoMarcadaId}`
+                        )
+
+                        .setLabel(
+                            "Registrar Kills"
+                        )
+
+                        .setEmoji(
+                            "💀"
+                        )
+
+                        .setStyle(
+                            ButtonStyle.Primary
+                        ),
+
+                    new ButtonBuilder()
+
+                        .setCustomId(
+                            `acao_finalizacao_cancelar_${acaoMarcadaId}`
+                        )
+
+                        .setLabel(
+                            "Cancelar"
+                        )
+
+                        .setEmoji(
+                            "❌"
+                        )
+
+                        .setStyle(
+                            ButtonStyle.Danger
+                        )
+
+                );
+
+        // ==========================================
+        // RESPOSTA
+        // ==========================================
+
+        await interaction.editReply({
+
+            content:
+`✅ **Resultado da ação salvo.**
+
+🎯 **Ação:** ${acao.nomeAcao}
+🏆 **Resultado:** ${resultadoFinal}
+
+💰 **Rendimento:** ${valorRendido.toLocaleString(
+                "pt-BR",
+                {
+                    style:
+                        "currency",
+
+                    currency:
+                        "BRL"
+                }
+            )}
+
+👥 **Participantes:** ${participantesReais.length}
+
+${observacoes
+    ? `📝 **Observações:** ${observacoes}\n\n`
+    : ""
+}Agora precisamos registrar as **kills de cada participante** antes de concluir a ação.`,
+
+            components: [
+                botoes
+            ]
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao registrar resultado da ação:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível registrar o resultado da ação.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(() => {});
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    }
+
+    return;
+
+}
+
+
     // ==================================================
     // SISTEMA DE PARCEIROS
     // ==================================================
