@@ -100,7 +100,11 @@ const {
     adicionarParticipanteAcao,
     removerParticipanteAcao,
     listarParticipantes,
-    listarKillsAcao
+    listarKillsAcao,
+    buscarAcaoMarcada,
+    buscarResultadoAcao,
+    obterProgressoKills,
+    finalizarAcaoMarcada
 } = require("../services/acaoService");
 
 const {
