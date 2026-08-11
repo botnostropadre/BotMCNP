@@ -644,6 +644,136 @@ Você pode selecionar novamente um integrante caso precise corrigir a quantidade
 
     }
     // ==================================================
+// AÇÕES — CORRIGIR KILLS
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "acao_kills_editar_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_kills_editar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(acaoMarcadaId) ||
+            acaoMarcadaId <= 0
+        ) {
+
+            throw new Error(
+                "Identificador da ação inválido."
+            );
+
+        }
+
+        // ==========================================
+        // BUSCAR PARTICIPANTES
+        // ==========================================
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const participantesValidos =
+            participantes.filter(
+                participante =>
+                    Number(
+                        participante.participou
+                    ) === 1
+            );
+
+        if (
+            participantesValidos.length === 0
+        ) {
+
+            await interaction.editReply({
+                content:
+                    "❌ Não existem participantes registrados nesta ação."
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // BUSCAR KILLS ATUAIS
+        // ==========================================
+
+        const killsRegistradas =
+            await listarKillsAcao(
+                acaoMarcadaId
+            );
+
+        // ==========================================
+        // CRIAR MENU NOVAMENTE
+        // ==========================================
+
+        const menu =
+            criarAcaoKillsMenu(
+                acaoMarcadaId,
+                participantesValidos,
+                killsRegistradas
+            );
+
+        await interaction.editReply({
+
+            content:
+`✏️ **CORRIGIR KILLS**
+
+Selecione abaixo o integrante que deseja corrigir.
+
+Os valores já registrados serão mantidos até que você altere o integrante desejado.
+
+Depois da correção, você poderá confirmar o relatório novamente.`,
+
+            components: [
+                menu
+            ]
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao abrir correção de kills:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível abrir a correção de kills.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(() => {});
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    }
+
+    return;
+
+}
+// ==================================================
 // AÇÕES — CONFIRMAR RELATÓRIO FINAL
 // ==================================================
 
