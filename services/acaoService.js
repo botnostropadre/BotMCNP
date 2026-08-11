@@ -772,7 +772,320 @@ async function listarAcoesMarcadasAbertas() {
     );
 
 }
+// ======================================================
+// REGISTRAR RESULTADO DA AÇÃO
+// ======================================================
 
+async function registrarResultadoAcao({
+    acaoMarcadaId,
+    resultado,
+    valorRendido,
+    observacoes,
+    registradoPorId,
+    registradoPorNome
+}) {
+
+    const acao =
+        await buscarAcaoMarcada(
+            acaoMarcadaId
+        );
+
+    if (!acao) {
+
+        throw new Error(
+            "A ação marcada não foi encontrada."
+        );
+
+    }
+
+    if (
+        acao.status !==
+        "Aberta"
+    ) {
+
+        return {
+            status:
+                "ja_finalizada"
+        };
+
+    }
+
+    await executar(
+        `
+            INSERT INTO acoesResultados (
+
+                acaoMarcadaId,
+                resultado,
+                valorRendido,
+                observacoes,
+                registradoPorId,
+                registradoPorNome,
+                registradoEm
+
+            )
+
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+
+            ON CONFLICT(acaoMarcadaId)
+            DO UPDATE SET
+
+                resultado =
+                    excluded.resultado,
+
+                valorRendido =
+                    excluded.valorRendido,
+
+                observacoes =
+                    excluded.observacoes,
+
+                registradoPorId =
+                    excluded.registradoPorId,
+
+                registradoPorNome =
+                    excluded.registradoPorNome,
+
+                registradoEm =
+                    excluded.registradoEm
+        `,
+        [
+            acaoMarcadaId,
+            resultado,
+            valorRendido,
+            observacoes || null,
+            registradoPorId,
+            registradoPorNome,
+            new Date().toLocaleString(
+                "pt-BR"
+            )
+        ]
+    );
+
+    return {
+        status:
+            "registrado"
+    };
+
+}
+
+// ======================================================
+// BUSCAR RESULTADO DA AÇÃO
+// ======================================================
+
+async function buscarResultadoAcao(
+    acaoMarcadaId
+) {
+
+    return consultarUm(
+        `
+            SELECT *
+            FROM acoesResultados
+            WHERE acaoMarcadaId = ?
+        `,
+        [
+            acaoMarcadaId
+        ]
+    );
+
+}
+
+// ======================================================
+// REGISTRAR KILLS DE UM PARTICIPANTE
+// ======================================================
+
+async function registrarKillsParticipante({
+    acaoMarcadaId,
+    discordId,
+    nome,
+    kills
+}) {
+
+    const quantidadeKills =
+        Number(kills);
+
+    if (
+        !Number.isInteger(
+            quantidadeKills
+        ) ||
+        quantidadeKills < 0
+    ) {
+
+        throw new Error(
+            "A quantidade de kills deve ser um número inteiro igual ou maior que zero."
+        );
+
+    }
+
+    const acao =
+        await buscarAcaoMarcada(
+            acaoMarcadaId
+        );
+
+    if (!acao) {
+
+        throw new Error(
+            "A ação marcada não foi encontrada."
+        );
+
+    }
+
+    await executar(
+        `
+            INSERT INTO acoesKills (
+
+                acaoMarcadaId,
+                discordId,
+                nome,
+                kills
+
+            )
+
+            VALUES (?, ?, ?, ?)
+
+            ON CONFLICT (
+                acaoMarcadaId,
+                discordId
+            )
+
+            DO UPDATE SET
+
+                nome =
+                    excluded.nome,
+
+                kills =
+                    excluded.kills
+        `,
+        [
+            acaoMarcadaId,
+            discordId,
+            nome,
+            quantidadeKills
+        ]
+    );
+
+    return {
+        status:
+            "salvo",
+
+        kills:
+            quantidadeKills
+    };
+
+}
+
+// ======================================================
+// LISTAR KILLS DA AÇÃO
+// ======================================================
+
+async function listarKillsAcao(
+    acaoMarcadaId
+) {
+
+    return consultarTodos(
+        `
+            SELECT *
+            FROM acoesKills
+
+            WHERE acaoMarcadaId = ?
+
+            ORDER BY kills DESC,
+                     nome COLLATE NOCASE ASC
+        `,
+        [
+            acaoMarcadaId
+        ]
+    );
+
+}
+
+// ======================================================
+// BUSCAR KILLS DE UM PARTICIPANTE
+// ======================================================
+
+async function buscarKillsParticipante(
+    acaoMarcadaId,
+    discordId
+) {
+
+    return consultarUm(
+        `
+            SELECT *
+            FROM acoesKills
+
+            WHERE acaoMarcadaId = ?
+            AND discordId = ?
+        `,
+        [
+            acaoMarcadaId,
+            discordId
+        ]
+    );
+
+}
+
+// ======================================================
+// VERIFICAR PROGRESSO DAS KILLS
+// ======================================================
+
+async function obterProgressoKills(
+    acaoMarcadaId
+) {
+
+    const participantes =
+        await listarParticipantes(
+            acaoMarcadaId
+        );
+
+    const titulares =
+        participantes.filter(
+            participante =>
+                Number(
+                    participante.participou
+                ) === 1
+        );
+
+    const kills =
+        await listarKillsAcao(
+            acaoMarcadaId
+        );
+
+    const preenchidos =
+        titulares.filter(
+            participante =>
+                kills.some(
+                    registro =>
+                        registro.discordId ===
+                        participante.discordId
+                )
+        );
+
+    const pendentes =
+        titulares.filter(
+            participante =>
+                !kills.some(
+                    registro =>
+                        registro.discordId ===
+                        participante.discordId
+                )
+        );
+
+    return {
+
+        total:
+            titulares.length,
+
+        preenchidos:
+            preenchidos.length,
+
+        pendentes,
+
+        completo:
+            titulares.length > 0 &&
+            preenchidos.length ===
+                titulares.length
+
+    };
+
+}
 // ======================================================
 // EXPORTAÇÃO
 // ======================================================
@@ -799,6 +1112,18 @@ module.exports = {
 
     removerParticipanteAcao,
 
-    listarAcoesMarcadasAbertas
+    listarAcoesMarcadasAbertas,
+
+    registrarResultadoAcao,
+
+    buscarResultadoAcao,
+
+    registrarKillsParticipante,
+
+    listarKillsAcao,
+
+    buscarKillsParticipante,
+
+    obterProgressoKills
 
 };

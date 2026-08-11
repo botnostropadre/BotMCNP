@@ -42,6 +42,23 @@ const {
 } = require("./parceiros/handleParceiroFinalizar");
 
 // ======================================================
+// SISTEMA DE AÇÕES
+// ======================================================
+
+const {
+    registrarResultadoAcao,
+    buscarAcaoMarcada,
+    listarParticipantes,
+    registrarKillsParticipante,
+    listarKillsAcao,
+    obterProgressoKills
+} = require("../services/acaoService");
+
+const {
+    criarAcaoKillsMenu
+} = require("../selectMenus/acaoKillsMenu");
+
+// ======================================================
 // SISTEMA DE EVENTOS
 // ======================================================
 
@@ -212,8 +229,330 @@ async function atualizarPainelEditor(
 async function handleModal(interaction) {
 
     if (!interaction.isModalSubmit()) return;
+// ==================================================
+// AÇÕES — REGISTRAR KILLS DO PARTICIPANTE
+// ==================================================
 
-        // ==================================================
+if (
+    interaction.customId.startsWith(
+        "acao_kills_modal_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        // ==========================================
+        // EXTRAIR IDs
+        // ==========================================
+
+        const dadosId =
+            interaction.customId.replace(
+                "acao_kills_modal_",
+                ""
+            );
+
+        const separador =
+            dadosId.indexOf("_");
+
+        if (
+            separador === -1
+        ) {
+
+            throw new Error(
+                "Identificador do participante inválido."
+            );
+
+        }
+
+        const acaoMarcadaId =
+            Number(
+                dadosId.substring(
+                    0,
+                    separador
+                )
+            );
+
+        const discordId =
+            dadosId.substring(
+                separador + 1
+            );
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0 ||
+            !discordId
+        ) {
+
+            throw new Error(
+                "Ação ou participante inválido."
+            );
+
+        }
+
+        // ==========================================
+        // KILLS INFORMADAS
+        // ==========================================
+
+        const killsTexto =
+            interaction.fields
+                .getTextInputValue(
+                    "kills"
+                )
+                .trim();
+
+        const kills =
+            Number(
+                killsTexto
+            );
+
+        if (
+            !Number.isInteger(
+                kills
+            ) ||
+            kills < 0 ||
+            kills > 999
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Informe uma quantidade válida de kills.\n\n" +
+                    "Use somente números inteiros de **0 a 999**."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // BUSCAR PARTICIPANTE
+        // ==========================================
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const participante =
+            participantes.find(
+                item =>
+                    item.discordId ===
+                    discordId
+            );
+
+        if (!participante) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ Esse participante não pertence mais à ação."
+
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // SALVAR / ATUALIZAR KILLS
+        // ==========================================
+
+        await registrarKillsParticipante({
+
+            acaoMarcadaId,
+
+            discordId,
+
+            nome:
+                participante.nome,
+
+            kills
+
+        });
+
+        // ==========================================
+        // PROGRESSO
+        // ==========================================
+
+        const progresso =
+            await obterProgressoKills(
+                acaoMarcadaId
+            );
+
+        const killsRegistradas =
+            await listarKillsAcao(
+                acaoMarcadaId
+            );
+
+        // ==========================================
+        // TODOS PREENCHIDOS
+        // ==========================================
+
+        if (
+            progresso.completo
+        ) {
+
+            const ranking =
+                killsRegistradas
+
+                    .map(
+                        (registro, indice) =>
+                            `${indice + 1}. <@${registro.discordId}> — **${registro.kills} kill(s)**`
+                    )
+
+                    .join("\n");
+
+            const botoes =
+                new ActionRowBuilder()
+
+                    .addComponents(
+
+                        new ButtonBuilder()
+
+                            .setCustomId(
+                                `acao_relatorio_confirmar_${acaoMarcadaId}`
+                            )
+
+                            .setLabel(
+                                "Confirmar Relatório"
+                            )
+
+                            .setEmoji(
+                                "✅"
+                            )
+
+                            .setStyle(
+                                ButtonStyle.Success
+                            ),
+
+                        new ButtonBuilder()
+
+                            .setCustomId(
+                                `acao_kills_editar_${acaoMarcadaId}`
+                            )
+
+                            .setLabel(
+                                "Corrigir Kills"
+                            )
+
+                            .setEmoji(
+                                "✏️"
+                            )
+
+                            .setStyle(
+                                ButtonStyle.Secondary
+                            )
+
+                    );
+
+            await interaction.editReply({
+
+                content:
+`💀 **KILLS REGISTRADAS**
+
+✅ **${participante.nome}: ${kills} kill(s)**
+
+📊 **Progresso: ${progresso.preenchidos}/${progresso.total}**
+
+Todos os participantes foram preenchidos.
+
+### 🏆 Ranking da ação
+
+${ranking || "Nenhuma kill registrada."}
+
+Confira os dados antes de gerar o relatório definitivo.`,
+
+                components: [
+                    botoes
+                ]
+
+            });
+
+            return;
+
+        }
+
+        // ==========================================
+        // AINDA EXISTEM PENDENTES
+        // ==========================================
+
+        const menu =
+            criarAcaoKillsMenu(
+                acaoMarcadaId,
+                participantes,
+                killsRegistradas
+            );
+
+        const pendentesTexto =
+            progresso.pendentes
+
+                .map(
+                    participantePendente =>
+                        `• ${participantePendente.nome}`
+                )
+
+                .join("\n");
+
+        await interaction.editReply({
+
+            content:
+`✅ **Kills registradas!**
+
+👤 **Integrante:** ${participante.nome}
+💀 **Kills:** ${kills}
+
+📊 **Progresso:** ${progresso.preenchidos}/${progresso.total}
+
+### ⏳ Ainda faltam
+
+${pendentesTexto}
+
+Selecione o próximo integrante abaixo:`,
+
+            components: [
+                menu
+            ]
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao registrar kills:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível registrar as kills.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(() => {});
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    }
+
+    return;
+
+}
+    // ==================================================
     // SISTEMA DE PARCEIROS
     // ==================================================
 

@@ -39,6 +39,15 @@ const {
 const {
     criarAcaoMarcada
 } = require("../services/acaoService");
+
+const {
+    listarParticipantes
+} = require("../services/acaoService");
+
+const {
+    criarAcaoKillsModal
+} = require("../modals/acaoKillsModal");
+
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
@@ -287,6 +296,126 @@ if (
     return;
 
 }
+// ======================================================
+// AÇÕES — SELECIONAR PARTICIPANTE PARA KILLS
+// ======================================================
+
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId.startsWith(
+        "acao_kills_participante_"
+    )
+) {
+
+    try {
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_kills_participante_",
+                    ""
+                )
+            );
+
+        const discordId =
+            interaction.values[0];
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0 ||
+            !discordId
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Participante ou ação inválida.",
+
+                flags:
+                    64
+
+            });
+
+            return;
+
+        }
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const participante =
+            participantes.find(
+                item =>
+                    item.discordId ===
+                    discordId
+            );
+
+        if (!participante) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Esse participante não foi encontrado na ação.",
+
+                flags:
+                    64
+
+            });
+
+            return;
+
+        }
+
+        await interaction.showModal(
+
+            criarAcaoKillsModal({
+
+                acaoMarcadaId,
+
+                discordId:
+                    participante.discordId,
+
+                nome:
+                    participante.nome
+
+            })
+
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao selecionar participante para kills:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível abrir o formulário de kills.",
+
+                flags:
+                    64
+
+            }).catch(() => {});
+
+        }
+
+    }
+
+    return;
+
+}
+
 // ======================================================
 // AÇÕES — SELECIONAR PORTE
 // ======================================================

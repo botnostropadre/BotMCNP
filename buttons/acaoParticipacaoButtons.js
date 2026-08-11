@@ -54,6 +54,30 @@ function criarAcaoParticipacaoButtons(
                         ButtonStyle.Danger
                     )
 
+            ),
+
+        new ActionRowBuilder()
+
+            .addComponents(
+
+                new ButtonBuilder()
+
+                    .setCustomId(
+                        `acao_finalizar_${acaoMarcadaId}`
+                    )
+
+                    .setLabel(
+                        "Finalizar Ação"
+                    )
+
+                    .setEmoji(
+                        "🏁"
+                    )
+
+                    .setStyle(
+                        ButtonStyle.Primary
+                    )
+
             )
 
     ];

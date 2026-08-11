@@ -82,18 +82,34 @@ const {
 
 const db = require("../database/database");
 
+const {
+    criarAcaoFinalizarModal
+} = require("../modals/acaoFinalizarModal");
+const {
+    atualizarResumoPvp
+} = require("../services/atualizarResumoPvp");
+
+const {
+    atualizarEstatisticasGerais
+} = require("../services/atualizarEstatisticasGerais");
 // ======================================================
 // SISTEMA DE AÇÕES
 // ======================================================
 
 const {
     adicionarParticipanteAcao,
-    removerParticipanteAcao
+    removerParticipanteAcao,
+    listarParticipantes,
+    listarKillsAcao
 } = require("../services/acaoService");
 
 const {
     atualizarAcao
 } = require("../services/atualizarAcao");
+
+const {
+    criarAcaoKillsMenu
+} = require("../selectMenus/acaoKillsMenu");
 
 // ======================================================
 // SISTEMA DE PARCEIROS
@@ -148,7 +164,7 @@ async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
 
-        // ==================================================
+    // ==================================================
     // AÇÕES — CONFIRMAR PRESENÇA
     // ==================================================
 
@@ -395,7 +411,176 @@ async function handleButton(interaction) {
                     acaoMarcadaId,
                     interaction.user.id
                 );
+// ==================================================
+// AÇÕES — FINALIZAR
+// ==================================================
 
+if (
+    interaction.customId.startsWith(
+        "acao_finalizar_"
+    )
+) {
+
+    const acaoMarcadaId =
+        interaction.customId.replace(
+            "acao_finalizar_",
+            ""
+        );
+
+    return interaction.showModal(
+        criarAcaoFinalizarModal(
+            acaoMarcadaId
+        )
+    );
+
+}
+// ==================================================
+// AÇÕES — INICIAR REGISTRO DE KILLS
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "acao_kills_iniciar_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_kills_iniciar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0
+        ) {
+
+            await interaction.editReply({
+                content:
+                    "❌ Identificador da ação inválido."
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // BUSCAR PARTICIPANTES
+        // ==========================================
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const participantesValidos =
+            participantes.filter(
+                participante =>
+                    Number(
+                        participante.participou
+                    ) === 1
+            );
+
+        if (
+            participantesValidos.length === 0
+        ) {
+
+            await interaction.editReply({
+                content:
+                    "❌ Não existem participantes registrados nesta ação."
+            });
+
+            apagarResposta(interaction);
+
+            return;
+
+        }
+
+        // ==========================================
+        // BUSCAR KILLS JÁ REGISTRADAS
+        // ==========================================
+
+        const killsRegistradas =
+            await listarKillsAcao(
+                acaoMarcadaId
+            );
+
+        // ==========================================
+        // CRIAR MENU
+        // ==========================================
+
+        const menu =
+            criarAcaoKillsMenu(
+                acaoMarcadaId,
+                participantesValidos,
+                killsRegistradas
+            );
+
+        const quantidadeRegistrada =
+            killsRegistradas.filter(
+                registro =>
+                    participantesValidos.some(
+                        participante =>
+                            participante.discordId ===
+                            registro.discordId
+                    )
+            ).length;
+
+        // ==========================================
+        // MOSTRAR PAINEL
+        // ==========================================
+
+        await interaction.editReply({
+
+            content:
+`💀 **REGISTRO DE KILLS**
+
+Selecione abaixo o integrante que deseja preencher.
+
+📊 **Progresso:** ${quantidadeRegistrada}/${participantesValidos.length}
+
+Você pode selecionar novamente um integrante caso precise corrigir a quantidade de kills.`,
+
+            components: [
+                menu
+            ]
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao iniciar registro de kills:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                "❌ Não foi possível abrir o registro de kills."
+
+        }).catch(() => {});
+
+        apagarResposta(interaction);
+
+    }
+
+    return;
+
+}
             // ==========================================
             // NÃO ESTAVA INSCRITO
             // ==========================================
@@ -458,6 +643,313 @@ async function handleButton(interaction) {
         return;
 
     }
+    // ==================================================
+// AÇÕES — CONFIRMAR RELATÓRIO FINAL
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "acao_relatorio_confirmar_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        const acaoMarcadaId =
+            Number(
+                interaction.customId.replace(
+                    "acao_relatorio_confirmar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                acaoMarcadaId
+            ) ||
+            acaoMarcadaId <= 0
+        ) {
+
+            throw new Error(
+                "Identificador da ação inválido."
+            );
+
+        }
+
+        const acao =
+            await buscarAcaoMarcada(
+                acaoMarcadaId
+            );
+
+        if (!acao) {
+
+            throw new Error(
+                "A ação não foi encontrada."
+            );
+
+        }
+
+        const resultado =
+            await buscarResultadoAcao(
+                acaoMarcadaId
+            );
+
+        if (!resultado) {
+
+            throw new Error(
+                "O resultado da ação ainda não foi registrado."
+            );
+
+        }
+
+        const progresso =
+            await obterProgressoKills(
+                acaoMarcadaId
+            );
+
+        if (
+            !progresso.completo
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    `❌ Ainda existem kills pendentes.\n\n` +
+                    `📊 Progresso: **${progresso.preenchidos}/${progresso.total}**`
+
+            });
+
+            return;
+
+        }
+
+        const participantes =
+            await listarParticipantes(
+                acaoMarcadaId
+            );
+
+        const kills =
+            await listarKillsAcao(
+                acaoMarcadaId
+            );
+
+        const CANAL_RESULTADOS =
+            "1536491000816734368";
+
+        const canalResultados =
+            interaction.guild.channels.cache.get(
+                CANAL_RESULTADOS
+            ) ||
+            await interaction.guild.channels
+                .fetch(
+                    CANAL_RESULTADOS
+                )
+                .catch(() => null);
+
+        if (
+            !canalResultados ||
+            !canalResultados.isTextBased()
+        ) {
+
+            throw new Error(
+                "O canal de resultados das ações não foi encontrado."
+            );
+
+        }
+
+        const embedResultado =
+            criarAcaoResultadoEmbed({
+
+                acao,
+
+                resultado,
+
+                participantes,
+
+                kills,
+
+                finalizadoPor:
+                    interaction.user
+
+            });
+
+        await canalResultados.send({
+
+            embeds: [
+                embedResultado
+            ]
+
+        });
+
+        const finalizacao =
+            await finalizarAcaoMarcada({
+
+                acaoMarcadaId,
+
+                finalizadoPorId:
+                    interaction.user.id,
+
+                finalizadoPorNome:
+                    interaction.user.username
+
+            });
+
+        if (
+            finalizacao.status ===
+            "ja_finalizada"
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "⚠️ Essa ação já havia sido finalizada."
+
+            });
+
+            return;
+
+        }
+
+        // ==========================================
+        // ATUALIZAR RESUMO DOS PVPS
+        // ==========================================
+
+        try {
+
+            await atualizarResumoPvp(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao atualizar Resumo dos PVPs:",
+                error
+            );
+
+        }
+
+        // ==========================================
+        // ATUALIZAR ESTATÍSTICAS GERAIS
+        // ==========================================
+
+        try {
+
+            await atualizarEstatisticasGerais(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao atualizar Estatísticas Gerais:",
+                error
+            );
+
+        }
+
+        // ==========================================
+        // APAGAR PAINEL DA AÇÃO
+        // ==========================================
+
+        if (
+            acao.canalId &&
+            acao.mensagemId
+        ) {
+
+            const canalAcao =
+                interaction.guild.channels.cache.get(
+                    acao.canalId
+                ) ||
+                await interaction.guild.channels
+                    .fetch(
+                        acao.canalId
+                    )
+                    .catch(() => null);
+
+            if (
+                canalAcao &&
+                canalAcao.isTextBased()
+            ) {
+
+                const mensagemAcao =
+                    await canalAcao.messages
+                        .fetch(
+                            acao.mensagemId
+                        )
+                        .catch(() => null);
+
+                if (mensagemAcao) {
+
+                    await mensagemAcao
+                        .delete()
+                        .catch(() => {});
+
+                }
+
+            }
+
+        }
+
+        await interaction.editReply({
+
+            content:
+`✅ **Ação finalizada com sucesso!**
+
+🎯 **Ação:** ${acao.nomeAcao}
+📌 **Resultado:** ${resultado.resultado}
+💰 **Rendimento:** ${Number(
+                resultado.valorRendido || 0
+            ).toLocaleString(
+                "pt-BR",
+                {
+                    style:
+                        "currency",
+
+                    currency:
+                        "BRL"
+                }
+            )}
+
+📢 O relatório foi enviado para ${canalResultados}.`
+
+        });
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao confirmar relatório da ação:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível finalizar a ação.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(() => {});
+
+        apagarResposta(
+            interaction,
+            15000
+        );
+
+    }
+
+    return;
+
+}
     // ==================================================
     // CRIAR EVENTO
     // ==================================================
