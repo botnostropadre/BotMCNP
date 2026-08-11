@@ -1087,6 +1087,72 @@ async function obterProgressoKills(
 
 }
 // ======================================================
+// FINALIZAR AÇÃO MARCADA
+// ======================================================
+
+async function finalizarAcaoMarcada({
+    acaoMarcadaId,
+    finalizadoPorId,
+    finalizadoPorNome
+}) {
+
+    const acao =
+        await buscarAcaoMarcada(
+            acaoMarcadaId
+        );
+
+    if (!acao) {
+
+        throw new Error(
+            "A ação marcada não foi encontrada."
+        );
+
+    }
+
+    if (
+        acao.status ===
+        "Finalizada"
+    ) {
+
+        return {
+            status:
+                "ja_finalizada"
+        };
+
+    }
+
+    await executar(
+        `
+            UPDATE acoesMarcadas
+
+            SET
+                status = 'Finalizada',
+
+                finalizadoPorId = ?,
+
+                finalizadoPorNome = ?,
+
+                finalizadoEm = ?
+
+            WHERE id = ?
+        `,
+        [
+            finalizadoPorId,
+            finalizadoPorNome,
+            new Date().toLocaleString(
+                "pt-BR"
+            ),
+            acaoMarcadaId
+        ]
+    );
+
+    return {
+        status:
+            "finalizada"
+    };
+
+}
+// ======================================================
 // EXPORTAÇÃO
 // ======================================================
 
@@ -1124,6 +1190,8 @@ module.exports = {
 
     buscarKillsParticipante,
 
-    obterProgressoKills
+    obterProgressoKills,
+
+    finalizarAcaoMarcada
 
 };
