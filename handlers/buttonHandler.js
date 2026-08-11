@@ -359,7 +359,7 @@ async function handleButton(interaction) {
 
     }
 
-        // ==================================================
+       // ==================================================
     // AÇÕES — SAIR DA AÇÃO
     // ==================================================
 
@@ -370,10 +370,8 @@ async function handleButton(interaction) {
     ) {
 
         await interaction.deferReply({
-
             flags:
                 MessageFlags.Ephemeral
-
         });
 
         try {
@@ -394,10 +392,8 @@ async function handleButton(interaction) {
             ) {
 
                 await interaction.editReply({
-
                     content:
                         "❌ Identificador da ação inválido."
-
                 });
 
                 apagarResposta(interaction);
@@ -411,176 +407,7 @@ async function handleButton(interaction) {
                     acaoMarcadaId,
                     interaction.user.id
                 );
-// ==================================================
-// AÇÕES — FINALIZAR
-// ==================================================
 
-if (
-    interaction.customId.startsWith(
-        "acao_finalizar_"
-    )
-) {
-
-    const acaoMarcadaId =
-        interaction.customId.replace(
-            "acao_finalizar_",
-            ""
-        );
-
-    return interaction.showModal(
-        criarAcaoFinalizarModal(
-            acaoMarcadaId
-        )
-    );
-
-}
-// ==================================================
-// AÇÕES — INICIAR REGISTRO DE KILLS
-// ==================================================
-
-if (
-    interaction.customId.startsWith(
-        "acao_kills_iniciar_"
-    )
-) {
-
-    await interaction.deferReply({
-        flags:
-            MessageFlags.Ephemeral
-    });
-
-    try {
-
-        const acaoMarcadaId =
-            Number(
-                interaction.customId.replace(
-                    "acao_kills_iniciar_",
-                    ""
-                )
-            );
-
-        if (
-            !Number.isInteger(
-                acaoMarcadaId
-            ) ||
-            acaoMarcadaId <= 0
-        ) {
-
-            await interaction.editReply({
-                content:
-                    "❌ Identificador da ação inválido."
-            });
-
-            apagarResposta(interaction);
-
-            return;
-
-        }
-
-        // ==========================================
-        // BUSCAR PARTICIPANTES
-        // ==========================================
-
-        const participantes =
-            await listarParticipantes(
-                acaoMarcadaId
-            );
-
-        const participantesValidos =
-            participantes.filter(
-                participante =>
-                    Number(
-                        participante.participou
-                    ) === 1
-            );
-
-        if (
-            participantesValidos.length === 0
-        ) {
-
-            await interaction.editReply({
-                content:
-                    "❌ Não existem participantes registrados nesta ação."
-            });
-
-            apagarResposta(interaction);
-
-            return;
-
-        }
-
-        // ==========================================
-        // BUSCAR KILLS JÁ REGISTRADAS
-        // ==========================================
-
-        const killsRegistradas =
-            await listarKillsAcao(
-                acaoMarcadaId
-            );
-
-        // ==========================================
-        // CRIAR MENU
-        // ==========================================
-
-        const menu =
-            criarAcaoKillsMenu(
-                acaoMarcadaId,
-                participantesValidos,
-                killsRegistradas
-            );
-
-        const quantidadeRegistrada =
-            killsRegistradas.filter(
-                registro =>
-                    participantesValidos.some(
-                        participante =>
-                            participante.discordId ===
-                            registro.discordId
-                    )
-            ).length;
-
-        // ==========================================
-        // MOSTRAR PAINEL
-        // ==========================================
-
-        await interaction.editReply({
-
-            content:
-`💀 **REGISTRO DE KILLS**
-
-Selecione abaixo o integrante que deseja preencher.
-
-📊 **Progresso:** ${quantidadeRegistrada}/${participantesValidos.length}
-
-Você pode selecionar novamente um integrante caso precise corrigir a quantidade de kills.`,
-
-            components: [
-                menu
-            ]
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao iniciar registro de kills:",
-            error
-        );
-
-        await interaction.editReply({
-
-            content:
-                "❌ Não foi possível abrir o registro de kills."
-
-        }).catch(() => {});
-
-        apagarResposta(interaction);
-
-    }
-
-    return;
-
-}
             // ==========================================
             // NÃO ESTAVA INSCRITO
             // ==========================================
@@ -591,10 +418,8 @@ Você pode selecionar novamente um integrante caso precise corrigir a quantidade
             ) {
 
                 await interaction.editReply({
-
                     content:
                         "⚠️ Você não está inscrito nesta ação."
-
                 });
 
                 apagarResposta(interaction);
@@ -613,11 +438,9 @@ Você pode selecionar novamente um integrante caso precise corrigir a quantidade
             );
 
             await interaction.editReply({
-
                 content:
                     "✅ Você saiu da ação.\n\n" +
                     "As posições da equipe foram reorganizadas automaticamente."
-
             });
 
             apagarResposta(interaction);
@@ -630,10 +453,178 @@ Você pode selecionar novamente um integrante caso precise corrigir a quantidade
             );
 
             await interaction.editReply({
-
                 content:
                     "❌ Não foi possível remover sua participação da ação."
+            }).catch(() => {});
 
+            apagarResposta(interaction);
+
+        }
+
+        return;
+
+    }
+
+    // ==================================================
+    // AÇÕES — FINALIZAR
+    // ==================================================
+
+    if (
+        interaction.customId.startsWith(
+            "acao_finalizar_"
+        )
+    ) {
+
+        const acaoMarcadaId =
+            interaction.customId.replace(
+                "acao_finalizar_",
+                ""
+            );
+
+        return interaction.showModal(
+            criarAcaoFinalizarModal(
+                acaoMarcadaId
+            )
+        );
+
+    }
+
+    // ==================================================
+    // AÇÕES — INICIAR REGISTRO DE KILLS
+    // ==================================================
+
+    if (
+        interaction.customId.startsWith(
+            "acao_kills_iniciar_"
+        )
+    ) {
+
+        await interaction.deferReply({
+            flags:
+                MessageFlags.Ephemeral
+        });
+
+        try {
+
+            const acaoMarcadaId =
+                Number(
+                    interaction.customId.replace(
+                        "acao_kills_iniciar_",
+                        ""
+                    )
+                );
+
+            if (
+                !Number.isInteger(
+                    acaoMarcadaId
+                ) ||
+                acaoMarcadaId <= 0
+            ) {
+
+                await interaction.editReply({
+                    content:
+                        "❌ Identificador da ação inválido."
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // BUSCAR PARTICIPANTES
+            // ==========================================
+
+            const participantes =
+                await listarParticipantes(
+                    acaoMarcadaId
+                );
+
+            const participantesValidos =
+                participantes.filter(
+                    participante =>
+                        Number(
+                            participante.participou
+                        ) === 1
+                );
+
+            if (
+                participantesValidos.length === 0
+            ) {
+
+                await interaction.editReply({
+                    content:
+                        "❌ Não existem participantes registrados nesta ação."
+                });
+
+                apagarResposta(interaction);
+
+                return;
+
+            }
+
+            // ==========================================
+            // BUSCAR KILLS JÁ REGISTRADAS
+            // ==========================================
+
+            const killsRegistradas =
+                await listarKillsAcao(
+                    acaoMarcadaId
+                );
+
+            // ==========================================
+            // CRIAR MENU
+            // ==========================================
+
+            const menu =
+                criarAcaoKillsMenu(
+                    acaoMarcadaId,
+                    participantesValidos,
+                    killsRegistradas
+                );
+
+            const quantidadeRegistrada =
+                killsRegistradas.filter(
+                    registro =>
+                        participantesValidos.some(
+                            participante =>
+                                participante.discordId ===
+                                registro.discordId
+                        )
+                ).length;
+
+            // ==========================================
+            // MOSTRAR PAINEL
+            // ==========================================
+
+            await interaction.editReply({
+
+                content:
+`💀 **REGISTRO DE KILLS**
+
+Selecione abaixo o integrante que deseja preencher.
+
+📊 **Progresso:** ${quantidadeRegistrada}/${participantesValidos.length}
+
+Você pode selecionar novamente um integrante caso precise corrigir a quantidade de kills.`,
+
+                components: [
+                    menu
+                ]
+
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao iniciar registro de kills:",
+                error
+            );
+
+            await interaction.editReply({
+                content:
+                    "❌ Não foi possível abrir o registro de kills."
             }).catch(() => {});
 
             apagarResposta(interaction);
