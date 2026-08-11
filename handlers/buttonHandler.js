@@ -85,6 +85,10 @@ const db = require("../database/database");
 const {
     criarAcaoFinalizarModal
 } = require("../modals/acaoFinalizarModal");
+
+const {
+    criarAcaoResultadoEmbed
+} = require("../embeds/acaoResultadoEmbed");
 const {
     atualizarResumoPvp
 } = require("../services/atualizarResumoPvp");
@@ -92,6 +96,7 @@ const {
 const {
     atualizarEstatisticasGerais
 } = require("../services/atualizarEstatisticasGerais");
+
 // ======================================================
 // SISTEMA DE AÇÕES
 // ======================================================
