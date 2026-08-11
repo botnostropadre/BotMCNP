@@ -97,6 +97,9 @@ const {
     atualizarEstatisticasGerais
 } = require("../services/atualizarEstatisticasGerais");
 
+const {
+    resetarTemporadaAcoes
+} = require("../services/resetAcoesService");
 // ======================================================
 // SISTEMA DE AÇÕES
 // ======================================================
@@ -203,6 +206,159 @@ function podeAdministrarAcoes(
 async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
+
+    // ==================================================
+// RESET DE TEMPORADA — CANCELAR
+// ==================================================
+
+if (
+    interaction.customId ===
+    "resetacoes_cancelar"
+) {
+
+    await interaction.update({
+
+        content:
+            "✅ Reset cancelado. Nenhum dado foi alterado.",
+
+        embeds: [],
+
+        components: []
+
+    });
+
+    return;
+
+}
+
+// ==================================================
+// RESET DE TEMPORADA — CONFIRMAR
+// ==================================================
+
+if (
+    interaction.customId ===
+    "resetacoes_confirmar"
+) {
+
+    const CARGO_LIDERANCA =
+        "1530456364059721823";
+
+    // ==========================================
+    // CONFERIR PERMISSÃO NOVAMENTE
+    // ==========================================
+
+    if (
+        !interaction.member.roles.cache.has(
+            CARGO_LIDERANCA
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Apenas a **Liderança** pode confirmar o reset.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
+
+    }
+
+    await interaction.deferUpdate();
+
+    try {
+
+        const resultado =
+            await resetarTemporadaAcoes();
+
+        // ==========================================
+        // ATUALIZAR RANKING
+        // ==========================================
+
+        try {
+
+            await atualizarResumoPvp(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao atualizar ranking após reset:",
+                error
+            );
+
+        }
+
+        // ==========================================
+        // ATUALIZAR ESTATÍSTICAS
+        // ==========================================
+
+        try {
+
+            await atualizarEstatisticasGerais(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao atualizar estatísticas após reset:",
+                error
+            );
+
+        }
+
+        // ==========================================
+        // CONFIRMAÇÃO
+        // ==========================================
+
+        await interaction.editReply({
+
+            content:
+`✅ **TEMPORADA RESETADA COM SUCESSO**
+
+🗑️ Ações finalizadas removidas: **${resultado.acoesApagadas}**
+
+💀 Ranking PVP: **Zerado**
+📊 Estatísticas Gerais: **Zeradas**
+💰 Valores acumulados: **Zerados**
+
+As ações abertas e todas as configurações foram preservadas.`,
+
+            embeds: [],
+
+            components: []
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao resetar temporada:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível resetar a temporada.\n\n` +
+                `Erro: ${error.message}`,
+
+            embeds: [],
+
+            components: []
+
+        }).catch(() => {});
+
+    }
+
+    return;
+
+}
 
     // ==================================================
     // AÇÕES — CONFIRMAR PRESENÇA
