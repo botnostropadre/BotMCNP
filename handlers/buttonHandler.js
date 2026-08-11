@@ -164,7 +164,38 @@ function apagarResposta(
     }, tempo);
 
 }
+// ======================================================
+// PERMISSÃO — ADMINISTRAÇÃO DE AÇÕES
+// ======================================================
 
+const CARGOS_ADMIN_ACOES = [
+    "1530456364059721823", // Liderança
+    "1535834868120948857", // Vice Liderança
+    "1531838445045940296", // Resp ELITE
+    "1535011230425681931"  // Elite
+];
+
+function podeAdministrarAcoes(
+    interaction
+) {
+
+    if (
+        !interaction.member ||
+        !interaction.member.roles
+    ) {
+
+        return false;
+
+    }
+
+    return CARGOS_ADMIN_ACOES.some(
+        cargoId =>
+            interaction.member.roles.cache.has(
+                cargoId
+            )
+    );
+
+}
 // ======================================================
 // HANDLER DE BOTÕES
 // ======================================================
@@ -759,7 +790,29 @@ if (
         "acao_finalizacao_cancelar_"
     )
 ) {
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
 
+    if (
+        !podeAdministrarAcoes(
+            interaction
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Você não possui permissão para cancelar a finalização da ação.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
+
+    }
     try {
 
         const acaoMarcadaId =
@@ -864,36 +917,7 @@ Você pode voltar ao painel da ação e finalizar novamente quando desejar.`,
             return;
 
         }
-// ======================================================
-// PERMISSÃO — ADMINISTRAÇÃO DE AÇÕES
-// ======================================================
 
-const CARGOS_ADMIN_ACOES = [
-    "1530456364059721823", // Liderança
-    "1535834868120948857", // Vice Liderança
-    "1531838445045940296", // Resp ELITE
-    "1535011230425681931"  // Elite
-];
-
-function podeAdministrarAcoes(interaction) {
-
-    if (
-        !interaction.member ||
-        !interaction.member.roles
-    ) {
-
-        return false;
-
-    }
-
-    return CARGOS_ADMIN_ACOES.some(
-        cargoId =>
-            interaction.member.roles.cache.has(
-                cargoId
-            )
-    );
-
-}
         // ==========================================
         // BUSCAR KILLS ATUAIS
         // ==========================================
@@ -965,7 +989,29 @@ if (
         "acao_relatorio_confirmar_"
     )
 ) {
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
 
+    if (
+        !podeAdministrarAcoes(
+            interaction
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Você não possui permissão para confirmar o relatório da ação.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
+
+    }
     await interaction.deferReply({
         flags:
             MessageFlags.Ephemeral
