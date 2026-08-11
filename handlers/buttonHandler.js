@@ -474,29 +474,57 @@ async function handleButton(interaction) {
 
     }
 
-    // ==================================================
-    // AÇÕES — FINALIZAR
-    // ==================================================
+// ==================================================
+// AÇÕES — FINALIZAR
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "acao_finalizar_"
+    )
+) {
+
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
 
     if (
-        interaction.customId.startsWith(
-            "acao_finalizar_"
+        !podeAdministrarAcoes(
+            interaction
         )
     ) {
 
-        const acaoMarcadaId =
-            interaction.customId.replace(
-                "acao_finalizar_",
-                ""
-            );
+        await interaction.reply({
 
-        return interaction.showModal(
-            criarAcaoFinalizarModal(
-                acaoMarcadaId
-            )
-        );
+            content:
+                "❌ Você não possui permissão para finalizar ações.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
 
     }
+
+    // ==========================================
+    // ABRIR MODAL DE FINALIZAÇÃO
+    // ==========================================
+
+    const acaoMarcadaId =
+        interaction.customId.replace(
+            "acao_finalizar_",
+            ""
+        );
+
+    return interaction.showModal(
+        criarAcaoFinalizarModal(
+            acaoMarcadaId
+        )
+    );
+
+}
 
     // ==================================================
     // AÇÕES — INICIAR REGISTRO DE KILLS
@@ -507,7 +535,29 @@ async function handleButton(interaction) {
             "acao_kills_iniciar_"
         )
     ) {
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
 
+    if (
+        !podeAdministrarAcoes(
+            interaction
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Você não possui permissão para registrar kills.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
+
+    }
         await interaction.deferReply({
             flags:
                 MessageFlags.Ephemeral
@@ -643,7 +693,7 @@ Você pode selecionar novamente um integrante caso precise corrigir a quantidade
         return;
 
     }
-    // ==================================================
+// ==================================================
 // AÇÕES — CORRIGIR KILLS
 // ==================================================
 
@@ -652,7 +702,29 @@ if (
         "acao_kills_editar_"
     )
 ) {
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
 
+    if (
+        !podeAdministrarAcoes(
+            interaction
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Você não possui permissão para corrigir kills.",
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        return;
+
+    }
     await interaction.deferReply({
         flags:
             MessageFlags.Ephemeral
@@ -792,7 +864,36 @@ Você pode voltar ao painel da ação e finalizar novamente quando desejar.`,
             return;
 
         }
+// ======================================================
+// PERMISSÃO — ADMINISTRAÇÃO DE AÇÕES
+// ======================================================
 
+const CARGOS_ADMIN_ACOES = [
+    "1530456364059721823", // Liderança
+    "1535834868120948857", // Vice Liderança
+    "1531838445045940296", // Resp ELITE
+    "1535011230425681931"  // Elite
+];
+
+function podeAdministrarAcoes(interaction) {
+
+    if (
+        !interaction.member ||
+        !interaction.member.roles
+    ) {
+
+        return false;
+
+    }
+
+    return CARGOS_ADMIN_ACOES.some(
+        cargoId =>
+            interaction.member.roles.cache.has(
+                cargoId
+            )
+    );
+
+}
         // ==========================================
         // BUSCAR KILLS ATUAIS
         // ==========================================

@@ -6,52 +6,93 @@ const {
     StringSelectMenuBuilder
 } = require("discord.js");
 
+
 const {
     criarModalCor
 } = require("../modals/embedCorModal");
+
 
 const {
     criarModalImagem
 } = require("../modals/embedImagemModal");
 
+
 const {
     criarModalRodape
 } = require("../modals/embedRodapeModal");
+
 
 const {
     atualizarEditor
 } = require("../services/embedBuilderService");
 
+
 const db = require("../database/database");
 
+
 const settings = require("../config/settings.json");
+
 const {
     ACOES
 } = require("../config/acoes");
+
 const {
     criarAcaoMarcadaEmbed
 } = require("../embeds/acaoMarcadaEmbed");
+
 
 const {
     criarAcaoParticipacaoButtons
 } = require("../buttons/acaoParticipacaoButtons");
 
-const {
-    criarAcaoMarcada
-} = require("../services/acaoService");
 
 const {
+    criarAcaoMarcada,
     listarParticipantes
 } = require("../services/acaoService");
+
 
 const {
     criarAcaoKillsModal
 } = require("../modals/acaoKillsModal");
 
+
+// ======================================================
+// PERMISSÃO — ADMINISTRAÇÃO DE AÇÕES
+// ======================================================
+
+const CARGOS_ADMIN_ACOES = [
+
+    "1530456364059721823", // Liderança
+
+    "1535834868120948857", // Vice Liderança
+
+    "1531838445045940296", // Resp ELITE
+
+    "1535011230425681931"  // Elite
+
+];
+
+function podeAdministrarAcoes(
+    interaction
+) {
+
+    return CARGOS_ADMIN_ACOES.some(
+        cargoId =>
+            interaction.member
+                ?.roles
+                ?.cache
+                ?.has(
+                    cargoId
+                )
+    );
+
+}
+
+
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA
 // ======================================================
-
 function apagarResposta(interaction, tempo = 10000) {
 
     setTimeout(async () => {
@@ -581,6 +622,30 @@ if (
         "acao_selecionar_porte"
 ) {
 
+    // ==========================================
+    // VERIFICAR PERMISSÃO
+    // ==========================================
+
+    if (
+        !podeAdministrarAcoes(
+            interaction
+        )
+    ) {
+
+        await interaction.reply({
+
+            content:
+                "❌ Você não possui permissão para iniciar ações.",
+
+            flags:
+                64
+
+        });
+
+        return;
+
+    }
+
     try {
 
         // ==============================================
@@ -668,6 +733,8 @@ if (
             return;
 
         }
+
+        
 
         // ==============================================
         // CRIAR AÇÃO MARCADA NO BANCO
