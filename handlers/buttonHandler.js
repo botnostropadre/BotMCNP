@@ -2555,12 +2555,7 @@ if (
                    let cargoAdicionado =
             false;
 
-        let cargoAreaAdicionado =
-            false;
-
-        let cargoArea =
-            null;
-
+        
         let nicknameAlterado =
             false;
 
@@ -2569,70 +2564,8 @@ if (
 
         try {
 
-            // ==========================================
-            // DEFINIR CARGO DA ÁREA
-            // ==========================================
-
-            const cargosArea = {
-
-                Elite:
-                    settings.cargos.elite,
-
-                Eventos:
-                    settings.cargos.eventos,
-
-                Farm:
-                    settings.cargos.farm
-
-            };
-
-            const cargoAreaId =
-                cargosArea[
-                    registro.areaDesejada
-                ];
-
-            if (!cargoAreaId) {
-
-                throw new Error(
-                    `Não existe um cargo configurado para a área ${registro.areaDesejada}.`
-                );
-
-            }
-
-            cargoArea =
-                interaction.guild.roles.cache.get(
-                    cargoAreaId
-                ) ||
-                await interaction.guild.roles
-                    .fetch(
-                        cargoAreaId
-                    )
-                    .catch(() => null);
-
-            if (!cargoArea) {
-
-                throw new Error(
-                    `O cargo da área ${registro.areaDesejada} não foi encontrado no servidor.`
-                );
-
-            }
-
-            // ==========================================
-            // VALIDAR HIERARQUIA DO CARGO DE ÁREA
-            // ==========================================
-
-            if (
-                botMembro.roles.highest.position <=
-                cargoArea.position
-            ) {
-
-                throw new Error(
-                    `O cargo do bot precisa estar acima do cargo de área **${cargoArea.name}**.`
-                );
-
-            }
-
-            // ==========================================
+            
+// ==========================================
 // DEFINIR NICKNAME
 // ==========================================
 
@@ -2698,27 +2631,7 @@ try {
             cargoAdicionado =
                 true;
 
-            // ==========================================
-            // CONCEDER CARGO DA ÁREA
-            // ==========================================
-
-            if (
-                cargoArea.id !==
-                cargo.id
-            ) {
-
-                await membro.roles.add(
-                    cargoArea,
-                    `Área definida no registro: ${registro.areaDesejada}`
-                );
-
-                cargoAreaAdicionado =
-                    true;
-
-            }
-                
-
-
+           
                 // ==========================================
                 // SALVAR COMO INTEGRANTE
                 // ==========================================
@@ -2803,21 +2716,7 @@ try {
         error
     );
 
-    // ==========================================
-    // ROLLBACK — CARGO DA ÁREA
-    // ==========================================
-
-    if (
-        cargoAreaAdicionado &&
-        cargoArea
-    ) {
-
-        await membro.roles.remove(
-            cargoArea
-        ).catch(() => {});
-
-    }
-
+    
     // ==========================================
     // ROLLBACK — CARGO PRINCIPAL
     // ==========================================
@@ -3244,18 +3143,7 @@ await membro.send({
                                 inline:
                                     true
                             },
-{
-    name:
-        "🎯 Cargo de área",
 
-    value:
-        cargoArea
-            ? cargoArea.name
-            : registro.areaDesejada,
-
-    inline:
-        true
-},
                             {
                                 name:
                                     "🛡 Aprovado por",
