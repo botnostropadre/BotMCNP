@@ -101,9 +101,12 @@ const {
     resetarTemporadaAcoes
 } = require("../services/resetAcoesService");
 const {
-    buscarParceiro
+    buscarParceiro,
+    removerParceiro
 } = require("../services/parceiroService");
-
+const {
+    atualizarParceiros
+} = require("../services/atualizarParceiros");
 const {
     criarParceiroEditarModal
 } = require("../modals/parceiroEditarModal");
@@ -113,6 +116,7 @@ const {
 } = require(
     "../buttons/parceiroGerenciarButtons"
 );
+
 // ======================================================
 // SISTEMA DE AÇÕES
 // ======================================================
@@ -2049,6 +2053,105 @@ if (
             "Erro ao cancelar exclusão de parceiro:",
             error
         );
+
+    }
+
+    return;
+
+}
+// ==================================================
+// PARCEIROS — CONFIRMAR EXCLUSÃO
+// ==================================================
+
+if (
+    interaction.customId.startsWith(
+        "parceiro_excluir_confirmar_"
+    )
+) {
+
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.customId.replace(
+                    "parceiro_excluir_confirmar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Parceiro inválido.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        const parceiro =
+            await removerParceiro(
+                parceiroId
+            );
+
+        await atualizarParceiros(
+            interaction.client
+        );
+
+        await interaction.update({
+
+            content:
+`✅ **Parceiro excluído com sucesso!**
+
+🏛️ **FAC:** ${parceiro.nomeFaccao}
+
+📦 **Produto:** ${parceiro.produto}
+
+📊 O painel de parceiros foi atualizado automaticamente.`,
+
+            embeds: [],
+
+            components: []
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao excluir parceiro:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    `❌ Não foi possível excluir o parceiro.\n\n` +
+                    `Erro: ${error.message}`,
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            }).catch(
+                () => {}
+            );
+
+        }
 
     }
 
