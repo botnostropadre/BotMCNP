@@ -31,7 +31,21 @@ const db = require("../database/database");
 
 
 const settings = require("../config/settings.json");
+const {
+    EmbedBuilder
+} = require("discord.js");
 
+const {
+    buscarParceiro
+} = require(
+    "../services/parceiroService"
+);
+
+const {
+    criarParceiroGerenciarButtons
+} = require(
+    "../buttons/parceiroGerenciarButtons"
+);
 const {
     ACOES
 } = require("../config/acoes");
@@ -112,7 +126,14 @@ function apagarResposta(interaction, tempo = 10000) {
 // ======================================================
 
 async function handleSelectMenu(interaction) {
+if (
+    !interaction.isStringSelectMenu() &&
+    !interaction.isChannelSelectMenu()
+) {
 
+    return;
+
+}
     if (
         !interaction.isStringSelectMenu() &&
         !interaction.isChannelSelectMenu()
@@ -121,6 +142,292 @@ async function handleSelectMenu(interaction) {
         return;
 
     }
+    // ======================================================
+// PARCEIROS — SELECIONAR PARCEIRO PARA GERENCIAR
+// ======================================================
+
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId ===
+        "parceiro_gerenciar_selecionar"
+) {
+
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.values[0]
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Parceiro inválido.",
+
+                embeds: [],
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        const parceiro =
+            await buscarParceiro(
+                parceiroId
+            );
+
+        if (!parceiro) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Esse parceiro não foi encontrado.",
+
+                embeds: [],
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        const embed =
+            new EmbedBuilder()
+
+                .setColor(
+                    0x2ECC71
+                )
+
+                .setTitle(
+                    `🤝 ${parceiro.nomeFaccao}`
+                )
+
+                .setDescription(
+`Parceiro selecionado para gerenciamento.
+
+📦 **Produto**
+${parceiro.produto}
+
+📝 **Descrição**
+${parceiro.descricao}
+
+💬 **Sala Dark Chat**
+${parceiro.salaDarkChat}
+
+🔐 **Senha da sala**
+${parceiro.senhaSala}`
+                )
+
+                .setFooter({
+
+                    text:
+                        `${settings.mc.nome} • Gerenciamento de Parceiros`
+
+                })
+
+                .setTimestamp();
+
+        await interaction.update({
+
+            content: null,
+
+            embeds: [
+                embed
+            ],
+
+            components:
+                criarParceiroGerenciarButtons(
+                    parceiro.id
+                )
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao selecionar parceiro para gerenciamento:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível carregar esse parceiro.",
+
+                flags:
+                    64
+
+            }).catch(
+                () => {}
+            );
+
+        }
+
+    }
+
+    return;
+
+}
+// ======================================================
+// PARCEIROS — SELECIONAR PARCEIRO PARA GERENCIAR
+// ======================================================
+
+if (
+    interaction.isStringSelectMenu() &&
+    interaction.customId ===
+        "parceiro_gerenciar_selecionar"
+) {
+
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.values[0]
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Parceiro inválido.",
+
+                embeds: [],
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        const parceiro =
+            await buscarParceiro(
+                parceiroId
+            );
+
+        if (!parceiro) {
+
+            await interaction.update({
+
+                content:
+                    "❌ Esse parceiro não foi encontrado.",
+
+                embeds: [],
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        const embed =
+            new EmbedBuilder()
+
+                .setColor(
+                    0x2ECC71
+                )
+
+                .setTitle(
+                    `🤝 ${parceiro.nomeFaccao}`
+                )
+
+                .setDescription(
+`Parceiro selecionado para gerenciamento.
+
+📦 **Produto**
+${parceiro.produto}
+
+📝 **Descrição**
+${parceiro.descricao}
+
+💬 **Sala Dark Chat**
+${parceiro.salaDarkChat}
+
+🔐 **Senha da sala**
+${parceiro.senhaSala}`
+                )
+
+                .setFooter({
+
+                    text:
+                        `${settings.mc.nome} • Gerenciamento de Parceiros`
+
+                })
+
+                .setTimestamp();
+
+        await interaction.update({
+
+            content: null,
+
+            embeds: [
+                embed
+            ],
+
+            components:
+                criarParceiroGerenciarButtons(
+                    parceiro.id
+                )
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao selecionar parceiro para gerenciamento:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível carregar esse parceiro.",
+
+                flags:
+                    64
+
+            }).catch(
+                () => {}
+            );
+
+        }
+
+    }
+
+    return;
+
+}
 // ==================================================
 // REGISTRO — SELECIONAR CARGO
 // ==================================================
