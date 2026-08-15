@@ -532,6 +532,30 @@ if (!process.env.TOKEN) {
 // CONECTAR BOT
 // ======================================================
 
+console.log(
+    "[BOT] Tentando conectar ao Discord..."
+);
+
 client.login(
     process.env.TOKEN
-);
+)
+.then(() => {
+
+    console.log(
+        "[BOT] Login aceito pelo Discord."
+    );
+
+})
+.catch(error => {
+
+    console.error(
+        "[BOT] ERRO AO FAZER LOGIN:"
+    );
+
+    console.error(
+        error
+    );
+
+    process.exit(1);
+
+});
