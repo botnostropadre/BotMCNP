@@ -29,17 +29,6 @@ const {
     handleParceiroPrincipal
 } = require("./parceiros/handleParceiroPrincipal");
 
-const {
-    handleParceiroResponsaveis
-} = require("./parceiros/handleParceiroResponsaveis");
-
-const {
-    handleParceiroProdutos
-} = require("./parceiros/handleParceiroProdutos");
-
-const {
-    handleParceiroFinalizar
-} = require("./parceiros/handleParceiroFinalizar");
 
 // ======================================================
 // SISTEMA DE AÇÕES
@@ -996,36 +985,7 @@ ${observacoes
         return;
 
     }
-
-    if (
-        await handleParceiroResponsaveis(
-            interaction
-        )
-    ) {
-
-        return;
-
-    }
-
-    if (
-        await handleParceiroProdutos(
-            interaction
-        )
-    ) {
-
-        return;
-
-    }
-
-    if (
-        await handleParceiroFinalizar(
-            interaction
-        )
-    ) {
-
-        return;
-
-    }
+  
 
     // ==================================================
     // EVENTO — PRIMEIRA ETAPA
