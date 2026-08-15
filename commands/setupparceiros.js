@@ -5,8 +5,11 @@ const {
     MessageFlags
 } = require("discord.js");
 
-const COLORS = require("../config/colors");
-const settings = require("../config/settings.json");
+const COLORS =
+    require("../config/colors");
+
+const settings =
+    require("../config/settings.json");
 
 const {
     criarParceirosButton
@@ -25,21 +28,41 @@ const CANAL_REGISTRAR_PARCEIROS =
 
 module.exports = {
 
-    data: new SlashCommandBuilder()
+    data:
+        new SlashCommandBuilder()
 
-        .setName("setupparceiros")
+            .setName(
+                "setupparceiros"
+            )
 
-        .setDescription(
-            "Cria o painel de registro de parceiros."
-        )
+            .setDescription(
+                "Cria o painel de registro de parceiros."
+            )
 
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator
-        ),
+            .setDefaultMemberPermissions(
+                PermissionFlagsBits.Administrator
+            ),
 
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
 
         try {
+
+            // ==================================================
+            // RESPONDER À INTERAÇÃO
+            // ==================================================
+
+            await interaction.deferReply({
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            // ==================================================
+            // LOCALIZAR CANAL
+            // ==================================================
 
             const canal =
                 interaction.guild.channels.cache.get(
@@ -49,26 +72,29 @@ module.exports = {
                     .fetch(
                         CANAL_REGISTRAR_PARCEIROS
                     )
-                    .catch(() => null);
+                    .catch(
+                        () => null
+                    );
 
             if (
                 !canal ||
                 !canal.isTextBased()
             ) {
 
-                await interaction.reply({
+                await interaction.editReply({
 
                     content:
-                        "❌ O canal de registro de parceiros não foi encontrado.",
-
-                    flags:
-                        MessageFlags.Ephemeral
+                        "❌ O canal de registro de parceiros não foi encontrado."
 
                 });
 
                 return;
 
             }
+
+            // ==================================================
+            // CRIAR EMBED
+            // ==================================================
 
             const embed =
                 new EmbedBuilder()
@@ -82,30 +108,24 @@ module.exports = {
                     )
 
                     .setDescription(
-`Utilize este painel para cadastrar os parceiros da organização.
+`Utilize este painel para cadastrar os parceiros da **${settings.mc.nome}**.
 
-Durante o registro, serão solicitadas as seguintes informações:
+O cadastro solicitará somente as seguintes informações:
 
-🏛️ **Nome da facção**
+🏛️ **Nome da FAC**
 
-📦 **Produto ou serviço principal**
+📦 **Produto que trabalha**
 
-👤 **Responsáveis e telefones**
+📝 **Descrição**
+Até **4.000 caracteres**.
 
-💰 **Produtos e valores**
+💬 **Sala do Dark Chat**
 
-As categorias disponíveis são:
+🔐 **Senha da sala**
 
-1. Armas
-2. Munições
-3. Drogas
-4. Contrabando
-5. Desmanche
-6. Hospital Ilegal
-7. Restaurantes
-8. Mecânicas
+━━━━━━━━━━━━━━━━━━━━
 
-Após concluir o cadastro, o painel do canal de parceiros será atualizado automaticamente.`
+Após concluir o cadastro, o painel de parceiros será atualizado automaticamente.`
                     )
 
                     .setFooter({
@@ -116,6 +136,10 @@ Após concluir o cadastro, o painel do canal de parceiros será atualizado autom
                     })
 
                     .setTimestamp();
+
+            // ==================================================
+            // ENVIAR PAINEL
+            // ==================================================
 
             await canal.send({
 
@@ -128,13 +152,14 @@ Após concluir o cadastro, o painel do canal de parceiros será atualizado autom
 
             });
 
-            await interaction.reply({
+            // ==================================================
+            // CONFIRMAÇÃO
+            // ==================================================
+
+            await interaction.editReply({
 
                 content:
-                    `✅ Painel de parceiros criado com sucesso em ${canal}.`,
-
-                flags:
-                    MessageFlags.Ephemeral
+                    `✅ Painel de parceiros criado com sucesso em ${canal}.`
 
             });
 
@@ -145,20 +170,43 @@ Após concluir o cadastro, o painel do canal de parceiros será atualizado autom
                 error
             );
 
+            const mensagem =
+                `❌ Não foi possível criar o painel de parceiros.\n\n` +
+                `Erro: ${error.message}`;
+
             if (
-                !interaction.replied &&
-                !interaction.deferred
+                interaction.deferred ||
+                interaction.replied
             ) {
+
+                await interaction.editReply({
+
+                    content:
+                        mensagem,
+
+                    embeds:
+                        [],
+
+                    components:
+                        []
+
+                }).catch(
+                    () => {}
+                );
+
+            } else {
 
                 await interaction.reply({
 
                     content:
-                        "❌ Não foi possível criar o painel de parceiros.",
+                        mensagem,
 
                     flags:
                         MessageFlags.Ephemeral
 
-                }).catch(() => {});
+                }).catch(
+                    () => {}
+                );
 
             }
 
