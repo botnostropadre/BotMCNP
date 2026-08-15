@@ -2,16 +2,13 @@ const {
     MessageFlags
 } = require("discord.js");
 
-const {
-    criarRascunhoParceiro
-} = require(
-    "../../services/parceiroBuilderService"
-);
+const db =
+    require("../../database/database");
 
 const {
-    criarParceiroContinuarButtons
+    atualizarParceiros
 } = require(
-    "../../buttons/parceirosButton"
+    "../../services/atualizarParceiros"
 );
 
 // ======================================================
@@ -20,7 +17,7 @@ const {
 
 function apagarResposta(
     interaction,
-    tempo = 10000
+    tempo = 15000
 ) {
 
     setTimeout(async () => {
@@ -36,78 +33,42 @@ function apagarResposta(
 }
 
 // ======================================================
-// NORMALIZAR TEXTO
+// EXECUTAR SQL
 // ======================================================
 
-function normalizarTexto(texto = "") {
+function executar(
+    sql,
+    parametros = []
+) {
 
-    return texto
+    return new Promise(
+        (resolve, reject) => {
 
-        .normalize("NFD")
+            db.run(
+                sql,
+                parametros,
+                function (error) {
 
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
+                    if (error) {
 
-        .trim()
+                        return reject(
+                            error
+                        );
 
-        .toLowerCase();
+                    }
+
+                    resolve(this);
+
+                }
+            );
+
+        }
+    );
 
 }
 
 // ======================================================
-// CATEGORIAS ACEITAS
-// ======================================================
-
-const CATEGORIAS = {
-
-    arma:
-        "Armas",
-
-    armas:
-        "Armas",
-
-    municao:
-        "Munições",
-
-    municoes:
-        "Munições",
-
-    droga:
-        "Drogas",
-
-    drogas:
-        "Drogas",
-
-    contrabando:
-        "Contrabando",
-
-    desmanche:
-        "Desmanche",
-
-    hospital:
-        "Hospital Ilegal",
-
-    "hospital ilegal":
-        "Hospital Ilegal",
-
-    restaurante:
-        "Restaurantes",
-
-    restaurantes:
-        "Restaurantes",
-
-    mecanica:
-        "Mecânicas",
-
-    mecanicas:
-        "Mecânicas"
-
-};
-
-// ======================================================
-// PRIMEIRA ETAPA DO PARCEIRO
+// CADASTRAR PARCEIRO
 // ======================================================
 
 async function handleParceiroPrincipal(
@@ -124,103 +85,242 @@ async function handleParceiroPrincipal(
 
     }
 
-    const nomeFaccao =
-        interaction.fields
-            .getTextInputValue(
-                "parceiro_nome_faccao"
-            )
-            .trim();
+    // ==================================================
+    // RESPONDER IMEDIATAMENTE
+    // ==================================================
 
-    const categoriaInformada =
-        interaction.fields
-            .getTextInputValue(
-                "parceiro_categoria"
-            )
-            .trim();
+    await interaction.deferReply({
 
-    const categoria =
-        CATEGORIAS[
-            normalizarTexto(
-                categoriaInformada
-            )
-        ];
+        flags:
+            MessageFlags.Ephemeral
 
-    if (!categoria) {
-
-        await interaction.reply({
-
-            content:
-`❌ Categoria inválida.
-
-Utilize uma destas opções:
-
-1. Armas
-2. Munições
-3. Drogas
-4. Contrabando
-5. Desmanche
-6. Hospital Ilegal
-7. Restaurantes
-8. Mecânicas`,
-
-            flags:
-                MessageFlags.Ephemeral
-
-        });
-
-        apagarResposta(interaction);
-
-        return true;
-
-    }
+    });
 
     try {
 
-        criarRascunhoParceiro(
-            interaction.user.id,
-            {
-                nomeFaccao,
-                categoria
-            }
-        );
+        // ==================================================
+        // COLETAR DADOS
+        // ==================================================
 
-        await interaction.reply({
+        const nomeFaccao =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_nome_faccao"
+                )
+                .trim();
+
+        const produto =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_produto"
+                )
+                .trim();
+
+        const descricao =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_descricao"
+                )
+                .trim();
+
+        const salaDarkChat =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_sala_darkchat"
+                )
+                .trim();
+
+        const senhaSala =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_senha_sala"
+                )
+                .trim();
+
+        // ==================================================
+        // VALIDAR CAMPOS
+        // ==================================================
+
+        if (!nomeFaccao) {
+
+            throw new Error(
+                "Informe o nome da FAC."
+            );
+
+        }
+
+        if (!produto) {
+
+            throw new Error(
+                "Informe o produto que a FAC trabalha."
+            );
+
+        }
+
+        if (!descricao) {
+
+            throw new Error(
+                "Informe uma descrição da parceria."
+            );
+
+        }
+
+        if (!salaDarkChat) {
+
+            throw new Error(
+                "Informe a sala do Dark Chat."
+            );
+
+        }
+
+        if (!senhaSala) {
+
+            throw new Error(
+                "Informe a senha da sala."
+            );
+
+        }
+
+        // ==================================================
+        // DATA DO CADASTRO
+        // ==================================================
+
+        const dataCriacao =
+            new Date()
+                .toLocaleString(
+                    "pt-BR"
+                );
+
+        // ==================================================
+        // SALVAR NO BANCO
+        // ==================================================
+        //
+        // categoria, responsavel1 e telefone1 recebem ""
+        // apenas por compatibilidade com bancos antigos
+        // que possuam NOT NULL nessas colunas.
+        //
+        // O sistema NÃO coleta mais essas informações.
+        // ==================================================
+
+        const resultado =
+            await executar(
+                `
+                    INSERT INTO parceiros
+                    (
+                        nomeFaccao,
+
+                        produto,
+
+                        descricao,
+
+                        salaDarkChat,
+
+                        senhaSala,
+
+                        criadoPor,
+
+                        dataCriacao,
+
+                        categoria,
+
+                        responsavel1,
+
+                        telefone1
+                    )
+
+                    VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )
+                `,
+                [
+                    nomeFaccao,
+
+                    produto,
+
+                    descricao,
+
+                    salaDarkChat,
+
+                    senhaSala,
+
+                    interaction.user.id,
+
+                    dataCriacao,
+
+                    "",
+
+                    "",
+
+                    ""
+                ]
+            );
+
+        // ==================================================
+        // ATUALIZAR PAINEL DOS PARCEIROS
+        // ==================================================
+
+        try {
+
+            await atualizarParceiros(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Parceiro salvo, mas ocorreu erro ao atualizar o painel:",
+                error
+            );
+
+        }
+
+        // ==================================================
+        // CONFIRMAÇÃO
+        // ==================================================
+
+        await interaction.editReply({
 
             content:
-`✅ Informações principais salvas.
+`✅ **Parceiro cadastrado com sucesso!**
 
-🏛️ **Facção:** ${nomeFaccao}
+🏛️ **FAC:** ${nomeFaccao}
 
-📦 **Categoria:** ${categoria}
+📦 **Produto:** ${produto}
 
-Clique em **Continuar** para cadastrar os responsáveis.`,
+💬 **Sala Dark Chat:** ${salaDarkChat}
 
-            components:
-                criarParceiroContinuarButtons(),
+🔐 **Senha:** ${senhaSala}
 
-            flags:
-                MessageFlags.Ephemeral
+🆔 **Registro:** #${resultado.lastID}
+
+O painel de parceiros foi atualizado automaticamente.`
 
         });
+
+        apagarResposta(
+            interaction
+        );
 
     } catch (error) {
 
         console.error(
-            "Erro ao salvar primeira etapa do parceiro:",
+            "Erro ao cadastrar parceiro:",
             error
         );
 
-        await interaction.reply({
+        await interaction.editReply({
 
             content:
-                "❌ Não foi possível salvar as informações do parceiro.",
+                `❌ Não foi possível cadastrar o parceiro.\n\n` +
+                `Erro: ${error.message}`
 
-            flags:
-                MessageFlags.Ephemeral
+        }).catch(
+            () => {}
+        );
 
-        });
-
-        apagarResposta(interaction);
+        apagarResposta(
+            interaction
+        );
 
     }
 

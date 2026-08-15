@@ -2,336 +2,74 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const COLORS = require("../config/colors");
-const settings = require("../config/settings.json");
+const COLORS =
+    require("../config/colors");
 
-// ======================================================
-// ORDEM OFICIAL DAS CATEGORIAS
-// ======================================================
-
-const CATEGORIAS = [
-
-    {
-        chave: "armas",
-        nome: "Armas",
-        emoji: "🔫"
-    },
-
-    {
-        chave: "municoes",
-        nome: "Munições",
-        emoji: "💥"
-    },
-
-    {
-        chave: "drogas",
-        nome: "Drogas",
-        emoji: "🌿"
-    },
-
-    {
-        chave: "contrabando",
-        nome: "Contrabando",
-        emoji: "📦"
-    },
-
-    {
-        chave: "desmanche",
-        nome: "Desmanche",
-        emoji: "🚗"
-    },
-
-    {
-        chave: "hospital ilegal",
-        nome: "Hospital Ilegal",
-        emoji: "🏥"
-    },
-
-    {
-        chave: "restaurantes",
-        nome: "Restaurantes",
-        emoji: "🍽️"
-    },
-
-    {
-        chave: "mecanicas",
-        nome: "Mecânicas",
-        emoji: "🔧"
-    }
-
-];
-
-// ======================================================
-// NORMALIZAR TEXTO
-// ======================================================
-
-function normalizarTexto(texto = "") {
-
-    return texto
-        .normalize("NFD")
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .trim()
-        .toLowerCase();
-
-}
-
-// ======================================================
-// NORMALIZAR CATEGORIA
-// ======================================================
-
-function normalizarCategoria(categoria = "") {
-
-    const valor =
-        normalizarTexto(categoria);
-
-    const mapa = {
-
-        arma:
-            "armas",
-
-        armas:
-            "armas",
-
-        municao:
-            "municoes",
-
-        municoes:
-            "municoes",
-
-        droga:
-            "drogas",
-
-        drogas:
-            "drogas",
-
-        contrabando:
-            "contrabando",
-
-        desmanche:
-            "desmanche",
-
-        "hospital ilegal":
-            "hospital ilegal",
-
-        hospital:
-            "hospital ilegal",
-
-        restaurante:
-            "restaurantes",
-
-        restaurantes:
-            "restaurantes",
-
-        mecanica:
-            "mecanicas",
-
-        mecanicas:
-            "mecanicas"
-
-    };
-
-    return mapa[valor] || valor;
-
-}
-
-// ======================================================
-// FORMATAR RESPONSÁVEIS
-// ======================================================
-
-function formatarResponsaveis(parceiro) {
-
-    const responsaveis = [];
-
-    if (
-        parceiro.responsavel1 &&
-        parceiro.telefone1
-    ) {
-
-        responsaveis.push(
-            `👤 **${parceiro.responsavel1}** — 📞 ${parceiro.telefone1}`
-        );
-
-    }
-
-    if (
-        parceiro.responsavel2 &&
-        parceiro.telefone2
-    ) {
-
-        responsaveis.push(
-            `👤 **${parceiro.responsavel2}** — 📞 ${parceiro.telefone2}`
-        );
-
-    }
-
-    if (
-        parceiro.responsavel3 &&
-        parceiro.telefone3
-    ) {
-
-        responsaveis.push(
-            `👤 **${parceiro.responsavel3}** — 📞 ${parceiro.telefone3}`
-        );
-
-    }
-
-    return responsaveis.length > 0
-        ? responsaveis.join("\n")
-        : "Nenhum responsável informado.";
-
-}
-
-// ======================================================
-// FORMATAR PRODUTOS
-// ======================================================
-
-function formatarProdutos(produtos = []) {
-
-    if (
-        !Array.isArray(produtos) ||
-        produtos.length === 0
-    ) {
-
-        return "Nenhum produto cadastrado.";
-
-    }
-
-    return produtos
-        .map(produto => {
-
-            return (
-                `• **${produto.produto}** — ` +
-                `${produto.valor}`
-            );
-
-        })
-        .join("\n");
-
-}
+const settings =
+    require("../config/settings.json");
 
 // ======================================================
 // FORMATAR PARCEIRO
 // ======================================================
 
-function formatarParceiro(parceiro) {
+function formatarParceiro(
+    parceiro
+) {
+
+    const nomeFaccao =
+        parceiro.nomeFaccao ||
+        "FAC não informada";
+
+    const produto =
+        parceiro.produto ||
+        "Não informado";
+
+    const descricao =
+        parceiro.descricao ||
+        "Nenhuma descrição informada.";
+
+    const salaDarkChat =
+        parceiro.salaDarkChat ||
+        "Não informada";
+
+    const senhaSala =
+        parceiro.senhaSala ||
+        "Não informada";
 
     return (
-`## ${parceiro.nomeFaccao}
+`## 🏛️ ${nomeFaccao}
 
-**Contatos**
+📦 **Produto**
+${produto}
 
-${formatarResponsaveis(parceiro)}
+📝 **Descrição**
+${descricao}
 
-**Produtos e valores**
+💬 **Sala do Dark Chat**
+${salaDarkChat}
 
-${formatarProdutos(parceiro.produtos)}`
+🔐 **Senha da sala**
+${senhaSala}`
     );
 
 }
 
 // ======================================================
-// CRIAR EMBEDS DOS PARCEIROS
+// DIVIDIR PARCEIROS EM EMBEDS
 // ======================================================
 
 function criarParceiroEmbeds(
     parceiros = []
 ) {
 
-    const grupos = new Map();
+    if (
+        !Array.isArray(
+            parceiros
+        ) ||
+        parceiros.length === 0
+    ) {
 
-    for (const categoria of CATEGORIAS) {
-
-        grupos.set(
-            categoria.chave,
-            []
-        );
-
-    }
-
-    for (const parceiro of parceiros) {
-
-        const categoriaNormalizada =
-            normalizarCategoria(
-                parceiro.categoria
-            );
-
-        if (
-            grupos.has(
-                categoriaNormalizada
-            )
-        ) {
-
-            grupos
-                .get(
-                    categoriaNormalizada
-                )
-                .push(parceiro);
-
-        }
-
-    }
-
-    const embeds = [];
-
-    for (const categoria of CATEGORIAS) {
-
-        const parceirosCategoria =
-            grupos.get(
-                categoria.chave
-            ) || [];
-
-        if (
-            parceirosCategoria.length === 0
-        ) {
-
-            continue;
-
-        }
-
-        const descricao =
-            parceirosCategoria
-                .map(formatarParceiro)
-                .join(
-                    "\n\n━━━━━━━━━━━━━━━━━━━━\n\n"
-                );
-
-        const embed =
-            new EmbedBuilder()
-
-                .setColor(
-                    COLORS.VERDE
-                )
-
-                .setTitle(
-                    `${categoria.emoji} ${categoria.nome.toUpperCase()}`
-                )
-
-                .setDescription(
-                    descricao.slice(
-                        0,
-                        4096
-                    )
-                )
-
-                .setFooter({
-
-                    text:
-                        `${settings.mc.nome} • Sistema de Parceiros`
-
-                })
-
-                .setTimestamp();
-
-        embeds.push(embed);
-
-    }
-
-    if (embeds.length === 0) {
-
-        embeds.push(
+        return [
 
             new EmbedBuilder()
 
@@ -356,6 +94,136 @@ function criarParceiroEmbeds(
 
                 .setTimestamp()
 
+        ];
+
+    }
+
+    // ==================================================
+    // GERAR BLOCOS
+    // ==================================================
+
+    const blocos =
+        parceiros.map(
+            formatarParceiro
+        );
+
+    const embeds =
+        [];
+
+    let descricaoAtual =
+        "";
+
+    // ==================================================
+    // RESPEITAR LIMITE DO DISCORD
+    // ==================================================
+
+    for (
+        const bloco
+        of blocos
+    ) {
+
+        const separador =
+            descricaoAtual
+                ? "\n\n━━━━━━━━━━━━━━━━━━━━\n\n"
+                : "";
+
+        const novoConteudo =
+            descricaoAtual +
+            separador +
+            bloco;
+
+        // Discord permite até 4096 caracteres
+        // na descrição de um embed.
+
+        if (
+            novoConteudo.length >
+            4096
+        ) {
+
+            if (
+                descricaoAtual
+            ) {
+
+                embeds.push(
+
+                    new EmbedBuilder()
+
+                        .setColor(
+                            COLORS.VERDE
+                        )
+
+                        .setTitle(
+                            "🤝 Parceiros da Organização"
+                        )
+
+                        .setDescription(
+                            descricaoAtual
+                        )
+
+                        .setFooter({
+
+                            text:
+                                `${settings.mc.nome} • Sistema de Parceiros`
+
+                        })
+
+                        .setTimestamp()
+
+                );
+
+            }
+
+            // Caso uma única parceria tenha uma
+            // descrição muito grande.
+
+            descricaoAtual =
+                bloco.slice(
+                    0,
+                    4096
+                );
+
+        } else {
+
+            descricaoAtual =
+                novoConteudo;
+
+        }
+
+    }
+
+    // ==================================================
+    // ÚLTIMO EMBED
+    // ==================================================
+
+    if (
+        descricaoAtual
+    ) {
+
+        embeds.push(
+
+            new EmbedBuilder()
+
+                .setColor(
+                    COLORS.VERDE
+                )
+
+                .setTitle(
+                    "🤝 Parceiros da Organização"
+                )
+
+                .setDescription(
+                    descricaoAtual
+                )
+
+                .setFooter({
+
+                    text:
+                        `${settings.mc.nome} • Sistema de Parceiros`
+
+                })
+
+                .setTimestamp()
+
         );
 
     }
@@ -369,11 +237,5 @@ function criarParceiroEmbeds(
 // ======================================================
 
 module.exports = {
-
-    criarParceiroEmbeds,
-
-    normalizarCategoria,
-
-    CATEGORIAS
-
+    criarParceiroEmbeds
 };

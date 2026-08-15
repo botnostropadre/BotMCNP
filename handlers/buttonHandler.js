@@ -131,21 +131,7 @@ const {
     criarParceiroPrincipalModal
 } = require("../modals/parceiroPrincipalModal");
 
-const {
-    criarParceiroResponsaveisModal
-} = require("../modals/parceiroResponsaveisModal");
 
-const {
-    criarParceiroProdutosModal
-} = require("../modals/parceiroProdutosModal");
-
-const {
-    criarParceiroProdutoExtraModal
-} = require("../modals/parceiroProdutoExtraModal");
-
-const {
-    removerRascunhoParceiro
-} = require("../services/parceiroBuilderService");
 
 // ======================================================
 // APAGAR RESPOSTA TEMPORÁRIA

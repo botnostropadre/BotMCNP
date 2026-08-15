@@ -36,29 +36,67 @@ console.log(
 // CONEXÃO
 // ======================================================
 
-const db = new sqlite3.Database(
-    caminhoBanco,
-    error => {
+let resolverBancoPronto;
+let rejeitarBancoPronto;
 
-        if (error) {
+const bancoPronto =
+    new Promise(
+        (resolve, reject) => {
 
-            console.error(
-                "❌ Erro ao conectar ao banco:",
-                error.message
-            );
+            resolverBancoPronto =
+                resolve;
 
-            return;
+            rejeitarBancoPronto =
+                reject;
 
         }
+    );
 
-        console.log(
-            "🗄 Banco conectado com sucesso."
-        );
+const db =
+    new sqlite3.Database(
+        caminhoBanco,
+        async error => {
 
-        iniciarBanco();
+            if (error) {
 
-    }
-);
+                console.error(
+                    "❌ Erro ao conectar ao banco:",
+                    error.message
+                );
+
+                rejeitarBancoPronto(
+                    error
+                );
+
+                return;
+
+            }
+
+            console.log(
+                "🗄 Banco conectado com sucesso."
+            );
+
+            try {
+
+                await iniciarBanco();
+
+                resolverBancoPronto();
+
+            } catch (error) {
+
+                console.error(
+                    "❌ Erro ao inicializar banco:",
+                    error
+                );
+
+                rejeitarBancoPronto(
+                    error
+                );
+
+            }
+
+        }
+    );
 
 // ======================================================
 // EXECUTAR SQL
@@ -859,209 +897,207 @@ await garantirColuna(
         `);
 
         // ==================================================
-        // PARCEIROS
-        // ==================================================
+// PARCEIROS
+// ==================================================
 
-        await executar(`
-            CREATE TABLE IF NOT EXISTS parceiros (
+await executar(`
+    CREATE TABLE IF NOT EXISTS parceiros (
 
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-                nomeFaccao TEXT NOT NULL,
+        nomeFaccao TEXT,
 
-                categoria TEXT NOT NULL,
+        produto TEXT,
 
-                responsavel1 TEXT NOT NULL,
+        descricao TEXT,
 
-                telefone1 TEXT NOT NULL,
+        salaDarkChat TEXT,
 
-                responsavel2 TEXT,
+        senhaSala TEXT,
 
-                telefone2 TEXT,
+        criadoPor TEXT,
 
-                responsavel3 TEXT,
+        dataCriacao TEXT,
 
-                telefone3 TEXT,
+        categoria TEXT,
 
-                criadoPor TEXT,
+        responsavel1 TEXT,
 
-                dataCriacao TEXT
+        telefone1 TEXT,
 
-            )
-        `);
+        responsavel2 TEXT,
 
-        // ==================================================
-        // PRODUTOS DOS PARCEIROS
-        // ==================================================
+        telefone2 TEXT,
 
-        await executar(`
-            CREATE TABLE IF NOT EXISTS parceiroProdutos (
+        responsavel3 TEXT,
 
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+        telefone3 TEXT
 
-                parceiroId INTEGER NOT NULL,
+    )
+`);
 
-                produto TEXT NOT NULL,
+// ==================================================
+// PAINEL DOS PARCEIROS
+// ==================================================
 
-                valor TEXT NOT NULL,
+await executar(`
+    CREATE TABLE IF NOT EXISTS painelParceiros (
 
-                ordem INTEGER DEFAULT 1,
+        id INTEGER PRIMARY KEY CHECK (id = 1),
 
-                FOREIGN KEY (
-                    parceiroId
-                )
-                REFERENCES parceiros(id)
-                ON DELETE CASCADE
+        canalId TEXT,
 
-            )
-        `);
+        mensagemId TEXT,
 
-        // ==================================================
-        // PAINEL DOS PARCEIROS
-        // ==================================================
+        ultimaAtualizacao TEXT
 
-        await executar(`
-            CREATE TABLE IF NOT EXISTS painelParceiros (
+    )
+`);
 
-                id INTEGER PRIMARY KEY CHECK (id = 1),
+// ==================================================
+// GARANTIR COLUNAS — NOVO SISTEMA DE PARCEIROS
+// ==================================================
 
-                canalId TEXT,
+await garantirColuna(
+    "parceiros",
+    "nomeFaccao",
+    "TEXT"
+);
 
-                mensagemId TEXT,
+await garantirColuna(
+    "parceiros",
+    "produto",
+    "TEXT"
+);
 
-                ultimaAtualizacao TEXT
+await garantirColuna(
+    "parceiros",
+    "descricao",
+    "TEXT"
+);
 
-            )
-        `);
+await garantirColuna(
+    "parceiros",
+    "salaDarkChat",
+    "TEXT"
+);
 
-        // ==================================================
-        // GARANTIR COLUNAS — PARCEIROS
-        // ==================================================
+await garantirColuna(
+    "parceiros",
+    "senhaSala",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "nomeFaccao",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "criadoPor",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "categoria",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "dataCriacao",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "responsavel1",
-            "TEXT"
-        );
+// ==================================================
+// COLUNAS ANTIGAS — COMPATIBILIDADE
+// ==================================================
+//
+// Essas colunas permanecem porque o banco de produção
+// pode ter sido criado com a estrutura antiga.
+//
+// O novo sistema não utilizará esses campos diretamente,
+// mas mantê-los evita problemas com bancos já existentes.
+// ==================================================
 
-        await garantirColuna(
-            "parceiros",
-            "telefone1",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "categoria",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "responsavel2",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "responsavel1",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "telefone2",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "telefone1",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "responsavel3",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "responsavel2",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "telefone3",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "telefone2",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "criadoPor",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "responsavel3",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiros",
-            "dataCriacao",
-            "TEXT"
-        );
+await garantirColuna(
+    "parceiros",
+    "telefone3",
+    "TEXT"
+);
 
-        // ==================================================
-        // GARANTIR COLUNAS — PRODUTOS
-        // ==================================================
+// ==================================================
+// GARANTIR COLUNAS — PAINEL DOS PARCEIROS
+// ==================================================
 
-        await garantirColuna(
-            "parceiroProdutos",
-            "parceiroId",
-            "INTEGER"
-        );
+await garantirColuna(
+    "painelParceiros",
+    "canalId",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiroProdutos",
-            "produto",
-            "TEXT"
-        );
+await garantirColuna(
+    "painelParceiros",
+    "mensagemId",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiroProdutos",
-            "valor",
-            "TEXT"
-        );
+await garantirColuna(
+    "painelParceiros",
+    "ultimaAtualizacao",
+    "TEXT"
+);
 
-        await garantirColuna(
-            "parceiroProdutos",
-            "ordem",
-            "INTEGER DEFAULT 1"
-        );
+// ==================================================
+// REMOVER ÍNDICE ANTIGO DE CATEGORIA
+// ==================================================
 
-        // ==================================================
-        // GARANTIR COLUNAS — PAINEL
-        // ==================================================
+await executar(`
+    DROP INDEX IF EXISTS
+    idx_parceiros_categoria
+`);
 
-        await garantirColuna(
-            "painelParceiros",
-            "canalId",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "painelParceiros",
-            "mensagemId",
-            "TEXT"
-        );
-
-        await garantirColuna(
-            "painelParceiros",
-            "ultimaAtualizacao",
-            "TEXT"
-        );
-
-                // ==================================================
-// ÍNDICES DOS PARCEIROS
+// ==================================================
+// ÍNDICES — NOVO SISTEMA DE PARCEIROS
 // ==================================================
 
 await executar(`
     CREATE INDEX IF NOT EXISTS
-    idx_parceiros_categoria
-    ON parceiros (categoria)
+    idx_parceiros_nome
+    ON parceiros (nomeFaccao)
 `);
 
 await executar(`
     CREATE INDEX IF NOT EXISTS
-    idx_parceiro_produtos_parceiro
-    ON parceiroProdutos (parceiroId)
+    idx_parceiros_produto
+    ON parceiros (produto)
 `);
 
 // ==================================================
@@ -1346,3 +1382,4 @@ console.log(
 // ======================================================
 
 module.exports = db;
+module.exports.bancoPronto = bancoPronto;
