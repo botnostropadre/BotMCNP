@@ -28,7 +28,13 @@ const {
 const {
     handleParceiroPrincipal
 } = require("./parceiros/handleParceiroPrincipal");
+const {
+    editarParceiro
+} = require("../services/parceiroService");
 
+const {
+    atualizarParceiros
+} = require("../services/atualizarParceiros");
 
 // ======================================================
 // SISTEMA DE AÇÕES
@@ -218,6 +224,147 @@ async function atualizarPainelEditor(
 async function handleModal(interaction) {
 
     if (!interaction.isModalSubmit()) return;
+
+// ======================================================
+// PARCEIROS — SALVAR EDIÇÃO
+// ======================================================
+
+if (
+    interaction.isModalSubmit() &&
+    interaction.customId.startsWith(
+        "parceiro_editar_modal_"
+    )
+) {
+
+    await interaction.deferReply({
+        flags:
+            MessageFlags.Ephemeral
+    });
+
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.customId.replace(
+                    "parceiro_editar_modal_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            throw new Error(
+                "Identificador do parceiro inválido."
+            );
+
+        }
+
+        const nomeFaccao =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_editar_nome"
+                )
+                .trim();
+
+        const produto =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_editar_produto"
+                )
+                .trim();
+
+        const descricao =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_editar_descricao"
+                )
+                .trim();
+
+        const salaDarkChat =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_editar_sala"
+                )
+                .trim();
+
+        const senhaSala =
+            interaction.fields
+                .getTextInputValue(
+                    "parceiro_editar_senha"
+                )
+                .trim();
+
+        const parceiro =
+            await editarParceiro(
+                parceiroId,
+                {
+                    nomeFaccao,
+                    produto,
+                    descricao,
+                    salaDarkChat,
+                    senhaSala
+                }
+            );
+
+        try {
+
+            await atualizarParceiros(
+                interaction.client
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Parceiro editado, mas ocorreu erro ao atualizar o painel:",
+                error
+            );
+
+        }
+
+        await interaction.editReply({
+
+            content:
+`✅ **Parceiro atualizado com sucesso!**
+
+🏛️ **FAC:** ${parceiro.nomeFaccao}
+
+📦 **Produto:** ${parceiro.produto}
+
+💬 **Sala Dark Chat:** ${parceiro.salaDarkChat}
+
+🔐 **Senha:** ${parceiro.senhaSala}
+
+📊 O painel de parceiros foi atualizado automaticamente.`
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao editar parceiro:",
+            error
+        );
+
+        await interaction.editReply({
+
+            content:
+                `❌ Não foi possível editar o parceiro.\n\n` +
+                `Erro: ${error.message}`
+
+        }).catch(
+            () => {}
+        );
+
+    }
+
+    return true;
+
+}
 
 // ==================================================
 // AÇÕES — REGISTRAR KILLS DO PARTICIPANTE

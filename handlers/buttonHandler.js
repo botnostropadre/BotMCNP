@@ -100,6 +100,19 @@ const {
 const {
     resetarTemporadaAcoes
 } = require("../services/resetAcoesService");
+const {
+    buscarParceiro
+} = require("../services/parceiroService");
+
+const {
+    criarParceiroEditarModal
+} = require("../modals/parceiroEditarModal");
+const {
+    criarParceiroGerenciarButtons,
+    criarParceiroExcluirButtons
+} = require(
+    "../buttons/parceiroGerenciarButtons"
+);
 // ======================================================
 // SISTEMA DE AÇÕES
 // ======================================================
@@ -193,7 +206,7 @@ async function handleButton(interaction) {
 
     if (!interaction.isButton()) return;
 
-    // ==================================================
+// ==================================================
 // RESET DE TEMPORADA — CANCELAR
 // ==================================================
 
@@ -1754,75 +1767,290 @@ if (
     );
 
 }
-
 // ==================================================
-// CONTINUAR RESPONSÁVEIS
+// PARCEIROS — EDITAR
 // ==================================================
 
 if (
-    interaction.customId ===
-    "parceiro_continuar_responsaveis"
+    interaction.customId.startsWith(
+        "parceiro_editar_"
+    )
 ) {
 
-    return interaction.showModal(
-        criarParceiroResponsaveisModal()
-    );
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.customId.replace(
+                    "parceiro_editar_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Parceiro inválido.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        const parceiro =
+            await buscarParceiro(
+                parceiroId
+            );
+
+        if (!parceiro) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Esse parceiro não foi encontrado.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        return interaction.showModal(
+            criarParceiroEditarModal(
+                parceiro
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao abrir edição de parceiro:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível abrir a edição desse parceiro.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            }).catch(
+                () => {}
+            );
+
+        }
+
+        return;
+
+    }
 
 }
-
 // ==================================================
-// CONTINUAR PRODUTOS
+// PARCEIROS — SOLICITAR EXCLUSÃO
 // ==================================================
 
 if (
-    interaction.customId ===
-    "parceiro_continuar_produtos"
+    interaction.customId.startsWith(
+        "parceiro_excluir_"
+    ) &&
+    !interaction.customId.startsWith(
+        "parceiro_excluir_confirmar_"
+    ) &&
+    !interaction.customId.startsWith(
+        "parceiro_excluir_cancelar_"
+    )
 ) {
 
-    return interaction.showModal(
-        criarParceiroProdutosModal()
-    );
+    try {
+
+        const parceiroId =
+            Number(
+                interaction.customId.replace(
+                    "parceiro_excluir_",
+                    ""
+                )
+            );
+
+        if (
+            !Number.isInteger(
+                parceiroId
+            ) ||
+            parceiroId <= 0
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Parceiro inválido.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        const parceiro =
+            await buscarParceiro(
+                parceiroId
+            );
+
+        if (!parceiro) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Esse parceiro não foi encontrado.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            });
+
+            return;
+
+        }
+
+        await interaction.update({
+
+            embeds: [],
+
+            content:
+`⚠️ **CONFIRMAR EXCLUSÃO**
+
+Você realmente deseja excluir esta parceria?
+
+🏛️ **FAC:** ${parceiro.nomeFaccao}
+
+📦 **Produto:** ${parceiro.produto}
+
+❗ Esta ação removerá o parceiro do sistema.`,
+
+            components:
+                criarParceiroExcluirButtons(
+                    parceiro.id
+                )
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao solicitar exclusão de parceiro:",
+            error
+        );
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
+
+            await interaction.reply({
+
+                content:
+                    "❌ Não foi possível preparar a exclusão.",
+
+                flags:
+                    MessageFlags.Ephemeral
+
+            }).catch(
+                () => {}
+            );
+
+        }
+
+    }
+
+    return;
 
 }
-
 // ==================================================
-// CONTINUAR PARA PRODUTO EXTRA
-// ==================================================
-
-if (
-    interaction.customId ===
-    "parceiro_continuar_produto_extra"
-) {
-
-    return interaction.showModal(
-        criarParceiroProdutoExtraModal()
-    );
-
-}
-
-// ==================================================
-// CANCELAR CADASTRO
+// PARCEIROS — CANCELAR EXCLUSÃO
 // ==================================================
 
 if (
-    interaction.customId ===
-    "parceiro_cancelar"
+    interaction.customId.startsWith(
+        "parceiro_excluir_cancelar_"
+    )
 ) {
 
-    removerRascunhoParceiro(
-        interaction.user.id
-    );
+    try {
 
-    await interaction.update({
+        const parceiroId =
+            Number(
+                interaction.customId.replace(
+                    "parceiro_excluir_cancelar_",
+                    ""
+                )
+            );
 
-        content:
-            "✅ Cadastro de parceiro cancelado.",
+        const parceiro =
+            await buscarParceiro(
+                parceiroId
+            );
 
-        embeds: [],
+        if (!parceiro) {
 
-        components: []
+            await interaction.update({
 
-    });
+                content:
+                    "❌ Esse parceiro não foi encontrado.",
+
+                embeds: [],
+
+                components: []
+
+            });
+
+            return;
+
+        }
+
+        await interaction.update({
+
+            content:
+                "✅ Exclusão cancelada.",
+
+            embeds: [],
+
+            components:
+                criarParceiroGerenciarButtons(
+                    parceiro.id
+                )
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao cancelar exclusão de parceiro:",
+            error
+        );
+
+    }
 
     return;
 
