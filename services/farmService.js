@@ -196,6 +196,10 @@ function normalizarQuantidade(valor) {
 
 
 
+// ======================================================
+// REGISTRAR LANÇAMENTO
+// ======================================================
+
 async function registrarFarm({
     discordId,
     tijolos,
@@ -273,6 +277,9 @@ async function registrarFarm({
     return obterResumoMembro(
         discordId
     );
+
+}
+
 // ======================================================
 // OBTER RESUMO DO MEMBRO
 // ======================================================
@@ -386,102 +393,101 @@ async function obterResumoMembro(
         Number(
             totaisSemana?.dinheiroSujoSemana || 0
         );
-}
 
-// ======================================================
-// META DIÁRIA DE DADOS
-// ======================================================
+    // ==================================================
+    // META DIÁRIA DE DADOS
+    // ==================================================
 
-const excedenteDadosDia =
-    Math.max(
-        0,
-        dadosDia -
-        META_DADOS_DIARIA
-    );
+    const excedenteDadosDia =
+        Math.max(
+            0,
+            dadosDia -
+            META_DADOS_DIARIA
+        );
 
-const faltamDadosDia =
-    Math.max(
-        0,
-        META_DADOS_DIARIA -
-        dadosDia
-    );
+    const faltamDadosDia =
+        Math.max(
+            0,
+            META_DADOS_DIARIA -
+            dadosDia
+        );
 
-// ======================================================
-// META SEMANAL DE DADOS
-// ======================================================
+    // ==================================================
+    // META SEMANAL DE DADOS
+    // ==================================================
 
-const excedenteDadosSemana =
-    Math.max(
-        0,
-        dadosSemana -
-        META_DADOS_SEMANAL
-    );
+    const excedenteDadosSemana =
+        Math.max(
+            0,
+            dadosSemana -
+            META_DADOS_SEMANAL
+        );
 
-const faltamDadosSemana =
-    Math.max(
-        0,
-        META_DADOS_SEMANAL -
-        dadosSemana
-    );
+    const faltamDadosSemana =
+        Math.max(
+            0,
+            META_DADOS_SEMANAL -
+            dadosSemana
+        );
 
-// ======================================================
-// META SEMANAL DE DINHEIRO SUJO
-// ======================================================
+    // ==================================================
+    // META SEMANAL DE DINHEIRO SUJO
+    // ==================================================
 
-const excedenteDinheiroSujoSemana =
-    Math.max(
-        0,
-        dinheiroSujoSemana -
-        META_DINHEIRO_SUJO_SEMANAL
-    );
+    const excedenteDinheiroSujoSemana =
+        Math.max(
+            0,
+            dinheiroSujoSemana -
+            META_DINHEIRO_SUJO_SEMANAL
+        );
 
-const faltamDinheiroSujoSemana =
-    Math.max(
-        0,
-        META_DINHEIRO_SUJO_SEMANAL -
-        dinheiroSujoSemana
-    );
+    const faltamDinheiroSujoSemana =
+        Math.max(
+            0,
+            META_DINHEIRO_SUJO_SEMANAL -
+            dinheiroSujoSemana
+        );
 
-return {
+    return {
 
-    discordId,
+        discordId,
 
-    semanaInicio,
+        semanaInicio,
 
-    dataDia,
+        dataDia,
 
-    dadosDia,
+        dadosDia,
 
-    dadosSemana,
+        dadosSemana,
 
-    dinheiroSujoSemana,
+        dinheiroSujoSemana,
 
-    metaDadosDiaria:
-        META_DADOS_DIARIA,
+        metaDadosDiaria:
+            META_DADOS_DIARIA,
 
-    metaDadosSemanal:
-        META_DADOS_SEMANAL,
+        metaDadosSemanal:
+            META_DADOS_SEMANAL,
 
-    metaDinheiroSujoSemanal:
-        META_DINHEIRO_SUJO_SEMANAL,
+        metaDinheiroSujoSemanal:
+            META_DINHEIRO_SUJO_SEMANAL,
 
-    excedenteDadosDia,
+        excedenteDadosDia,
 
-    faltamDadosDia,
+        faltamDadosDia,
 
-    excedenteDadosSemana,
+        excedenteDadosSemana,
 
-    faltamDadosSemana,
+        faltamDadosSemana,
 
-    excedenteDinheiroSujoSemana,
+        excedenteDinheiroSujoSemana,
 
-    faltamDinheiroSujoSemana,
+        faltamDinheiroSujoSemana,
 
-    ultimaAtualizacao:
-        ultimoRegistro?.dataRegistro ||
-        "Nenhum registro realizado"
+        ultimaAtualizacao:
+            ultimoRegistro?.dataRegistro ||
+            "Nenhum registro realizado"
 
-};
+    };
 
 }
 
