@@ -625,6 +625,22 @@ client.on(
 
     }
 );
+const idExtraidoToken =
+    Buffer.from(
+        process.env.TOKEN
+            .split(".")[0],
+        "base64"
+    ).toString();
+
+console.log(
+    "[BOT] CLIENT_ID:",
+    process.env.CLIENT_ID
+);
+
+console.log(
+    "[BOT] ID DO TOKEN:",
+    idExtraidoToken
+);
 console.log(
     "[BOT] Tentando conectar ao Discord..."
 );
