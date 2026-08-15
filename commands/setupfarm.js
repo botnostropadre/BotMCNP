@@ -78,26 +78,29 @@ module.exports = {
             .setDescription(
 `Bem-vindo ao sistema de controle de produção da **${settings.mc.nome}**.
 
-Utilize o botão abaixo para registrar sua produção diária.
+Utilize o botão abaixo para registrar sua produção.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🧱 **Tijolos**
-
-Meta semanal:
-**100 unidades**
-
-━━━━━━━━━━━━━━━━━━━━
-
-🔩 **Materiais**
+💳 **Dados**
 
 Meta diária:
-**200 unidades**
+**350 unidades**
+
+Meta semanal:
+**1.750 unidades**
+
+━━━━━━━━━━━━━━━━━━━━
+
+💵 **Dinheiro Sujo**
+
+Meta semanal:
+**R$ 500.000**
 
 ━━━━━━━━━━━━━━━━━━━━
 
 ⚠️ Pelo menos um dos campos deve ser preenchido para concluir o registro.`
-            )
+)
 
             .setFooter({
 

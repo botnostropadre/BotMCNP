@@ -4,11 +4,13 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const COLORS = require("../config/colors");
+const COLORS =
+    require("../config/colors");
 
 const {
     obterRelatorioSemanal,
-    META_TIJOLOS_SEMANAL
+    META_DADOS_SEMANAL,
+    META_DINHEIRO_SUJO_SEMANAL
 } = require("../services/farmService");
 
 // ======================================================
@@ -17,8 +19,35 @@ const {
 
 function formatarNumero(valor) {
 
-    return Number(valor || 0)
-        .toLocaleString("pt-BR");
+    return Number(
+        valor || 0
+    ).toLocaleString(
+        "pt-BR"
+    );
+
+}
+
+// ======================================================
+// FORMATAR DINHEIRO
+// ======================================================
+
+function formatarDinheiro(valor) {
+
+    return Number(
+        valor || 0
+    ).toLocaleString(
+        "pt-BR",
+        {
+            style:
+                "currency",
+
+            currency:
+                "BRL",
+
+            maximumFractionDigits:
+                0
+        }
+    );
 
 }
 
@@ -28,11 +57,33 @@ function formatarNumero(valor) {
 
 function obterMedalha(indice) {
 
-    if (indice === 0) return "🥇";
-    if (indice === 1) return "🥈";
-    if (indice === 2) return "🥉";
+    if (
+        indice === 0
+    ) {
 
-    return `**${indice + 1}º**`;
+        return "🥇";
+
+    }
+
+    if (
+        indice === 1
+    ) {
+
+        return "🥈";
+
+    }
+
+    if (
+        indice === 2
+    ) {
+
+        return "🥉";
+
+    }
+
+    return (
+        `**${indice + 1}º**`
+    );
 
 }
 
@@ -42,91 +93,162 @@ function obterMedalha(indice) {
 
 module.exports = {
 
-    data: new SlashCommandBuilder()
+    data:
+        new SlashCommandBuilder()
 
-        .setName("relatorio")
+            .setName(
+                "relatorio"
+            )
 
-        .setDescription(
-            "Mostra o relatório semanal de farm."
-        )
+            .setDescription(
+                "Mostra o relatório semanal de farm."
+            )
 
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator
-        ),
+            .setDefaultMemberPermissions(
+                PermissionFlagsBits.Administrator
+            ),
 
-    async execute(interaction) {
+    async execute(
+        interaction
+    ) {
 
         try {
 
             await interaction.deferReply({
-                flags: 64
+                flags:
+                    64
             });
 
             const registros =
                 await obterRelatorioSemanal();
 
+            // ==================================================
+            // SEM REGISTROS
+            // ==================================================
+
             if (
-                !Array.isArray(registros) ||
+                !Array.isArray(
+                    registros
+                ) ||
                 registros.length === 0
             ) {
 
                 await interaction.editReply({
+
                     content:
                         "⚠️ Nenhum farm foi registrado nesta semana."
+
                 });
 
-                setTimeout(async () => {
+                setTimeout(
+                    async () => {
 
-                    try {
+                        try {
 
-                        await interaction.deleteReply();
+                            await interaction
+                                .deleteReply();
 
-                    } catch {}
+                        } catch {}
 
-                }, 10000);
+                    },
+                    10000
+                );
 
                 return;
 
             }
 
-            let totalTijolos = 0;
-            let totalMateriais = 0;
+            // ==================================================
+            // TOTAIS GERAIS
+            // ==================================================
+
+            let totalDados =
+                0;
+
+            let totalDinheiroSujo =
+                0;
+
+            // ==================================================
+            // RANKING
+            // ==================================================
 
             const linhasRanking =
                 registros.map(
-                    (registro, indice) => {
+                    (
+                        registro,
+                        indice
+                    ) => {
 
-                        const tijolos =
+                        const dados =
                             Number(
-                                registro.tijolos || 0
+                                registro.dados ||
+                                0
                             );
 
-                        const materiais =
+                        const dinheiroSujo =
                             Number(
-                                registro.materiais || 0
+                                registro.dinheiroSujo ||
+                                0
                             );
 
-                        totalTijolos += tijolos;
-                        totalMateriais += materiais;
+                        totalDados +=
+                            dados;
+
+                        totalDinheiroSujo +=
+                            dinheiroSujo;
 
                         const nome =
                             registro.nomeExibicao ||
                             `Usuário ${registro.discordId}`;
 
-                        const progressoTijolos =
-                            tijolos >=
-                            META_TIJOLOS_SEMANAL
-                                ? "✅ Meta atingida"
-                                : `⏳ Faltam ${
-                                    META_TIJOLOS_SEMANAL -
-                                    tijolos
-                                }`;
+                        // ==========================================
+                        // PROGRESSO DOS DADOS
+                        // ==========================================
+
+                        const progressoDados =
+                            dados >=
+                            META_DADOS_SEMANAL
+
+                                ? "✅ Meta semanal de Dados atingida"
+
+                                : `⏳ Faltam ${formatarNumero(
+                                    META_DADOS_SEMANAL -
+                                    dados
+                                )} Dados`;
+
+                        // ==========================================
+                        // PROGRESSO DO DINHEIRO SUJO
+                        // ==========================================
+
+                        const progressoDinheiroSujo =
+                            dinheiroSujo >=
+                            META_DINHEIRO_SUJO_SEMANAL
+
+                                ? "✅ Meta de Dinheiro Sujo atingida"
+
+                                : `⏳ Faltam ${formatarDinheiro(
+                                    META_DINHEIRO_SUJO_SEMANAL -
+                                    dinheiroSujo
+                                )}`;
 
                         return (
                             `${obterMedalha(indice)} **${nome}**\n` +
-                            `🧱 Tijolos: **${formatarNumero(tijolos)} / ${META_TIJOLOS_SEMANAL}**\n` +
-                            `   ${progressoTijolos}\n` +
-                            `🔩 Materiais: **${formatarNumero(materiais)}**`
+
+                            `💳 Dados: **${formatarNumero(
+                                dados
+                            )} / ${formatarNumero(
+                                META_DADOS_SEMANAL
+                            )}**\n` +
+
+                            `   ${progressoDados}\n` +
+
+                            `💵 Dinheiro Sujo: **${formatarDinheiro(
+                                dinheiroSujo
+                            )} / ${formatarDinheiro(
+                                META_DINHEIRO_SUJO_SEMANAL
+                            )}**\n` +
+
+                            `   ${progressoDinheiroSujo}`
                         );
 
                     }
@@ -137,46 +259,71 @@ module.exports = {
                     "\n\n━━━━━━━━━━━━━━━━━━━━\n\n"
                 );
 
-            const embed = new EmbedBuilder()
+            // ==================================================
+            // EMBED
+            // ==================================================
 
-                .setColor(COLORS.VERDE)
+            const embed =
+                new EmbedBuilder()
 
-                .setTitle(
-                    "🏆 Relatório Semanal de Farm"
-                )
+                    .setColor(
+                        COLORS.VERDE
+                    )
 
-                .setDescription(
+                    .setTitle(
+                        "🏆 Relatório Semanal de Farm"
+                    )
+
+                    .setDescription(
 `${descricaoRanking}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-📊 **Total arrecadado pelo MC**
+📊 **Total arrecadado pela Cosa Nostra**
 
-🧱 Tijolos: **${formatarNumero(totalTijolos)}**
+💳 Dados: **${formatarNumero(
+    totalDados
+)} unidades**
 
-🔩 Materiais: **${formatarNumero(totalMateriais)}**`
-                )
+💵 Dinheiro Sujo: **${formatarDinheiro(
+    totalDinheiroSujo
+)}**`
+                    )
 
-                .setFooter({
-                    text:
-                        "Padre Nosso MC • Relatório semanal"
-                })
+                    .setFooter({
 
-                .setTimestamp();
+                        text:
+                            "Cosa Nostra • Relatório semanal"
+
+                    })
+
+                    .setTimestamp();
+
+            // ==================================================
+            // ENVIAR
+            // ==================================================
 
             await interaction.editReply({
-                embeds: [embed]
+
+                embeds: [
+                    embed
+                ]
+
             });
 
-            setTimeout(async () => {
+            setTimeout(
+                async () => {
 
-                try {
+                    try {
 
-                    await interaction.deleteReply();
+                        await interaction
+                            .deleteReply();
 
-                } catch {}
+                    } catch {}
 
-            }, 60000);
+                },
+                60000
+            );
 
         } catch (error) {
 
@@ -194,28 +341,46 @@ module.exports = {
             ) {
 
                 await interaction.editReply({
-                    content: mensagem,
-                    embeds: []
-                }).catch(() => {});
+
+                    content:
+                        mensagem,
+
+                    embeds:
+                        []
+
+                }).catch(
+                    () => {}
+                );
 
             } else {
 
                 await interaction.reply({
-                    content: mensagem,
-                    flags: 64
-                }).catch(() => {});
+
+                    content:
+                        mensagem,
+
+                    flags:
+                        64
+
+                }).catch(
+                    () => {}
+                );
 
             }
 
-            setTimeout(async () => {
+            setTimeout(
+                async () => {
 
-                try {
+                    try {
 
-                    await interaction.deleteReply();
+                        await interaction
+                            .deleteReply();
 
-                } catch {}
+                    } catch {}
 
-            }, 10000);
+                },
+                10000
+            );
 
         }
 

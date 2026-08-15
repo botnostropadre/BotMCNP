@@ -11,13 +11,13 @@ const {
 
 function criarFarmModal() {
 
-    const tijolos = new TextInputBuilder()
+    const dados = new TextInputBuilder()
 
         .setCustomId("farm_tijolos")
 
-        .setLabel("Quantidade de Tijolos")
+        .setLabel("💳 Quantidade de Dados")
 
-        .setPlaceholder("Ex.: 30")
+        .setPlaceholder("Ex.: 350")
 
         .setStyle(TextInputStyle.Short)
 
@@ -25,19 +25,19 @@ function criarFarmModal() {
 
         .setMaxLength(10);
 
-    const materiais = new TextInputBuilder()
+    const dinheiroSujo = new TextInputBuilder()
 
         .setCustomId("farm_materiais")
 
-        .setLabel("Quantidade de Materiais")
+        .setLabel("💵 Dinheiro Sujo")
 
-        .setPlaceholder("Ex.: 250")
+        .setPlaceholder("Ex.: 100000")
 
         .setStyle(TextInputStyle.Short)
 
         .setRequired(false)
 
-        .setMaxLength(10);
+        .setMaxLength(15);
 
     return new ModalBuilder()
 
@@ -48,10 +48,10 @@ function criarFarmModal() {
         .addComponents(
 
             new ActionRowBuilder()
-                .addComponents(tijolos),
+                .addComponents(dados),
 
             new ActionRowBuilder()
-                .addComponents(materiais)
+                .addComponents(dinheiroSujo)
 
         );
 

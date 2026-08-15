@@ -1443,15 +1443,15 @@ Clique em **Continuar Configuração** para informar:
         "farm_modal_registro"
     ) {
 
-        const tijolos =
-            interaction.fields
-                .getTextInputValue("farm_tijolos")
-                .trim();
+        const dados =
+    interaction.fields
+        .getTextInputValue("farm_tijolos")
+        .trim();
 
-        const materiais =
-            interaction.fields
-                .getTextInputValue("farm_materiais")
-                .trim();
+const dinheiroSujo =
+    interaction.fields
+        .getTextInputValue("farm_materiais")
+        .trim();
 
         const CATEGORIA_PLANILHAS =
             "1533146414576566292";
@@ -1467,16 +1467,18 @@ Clique em **Continuar Configuração** para informar:
                 interaction.member.displayName;
 
             const resumo =
-                await registrarFarm({
+    await registrarFarm({
 
-                    discordId:
-                        interaction.user.id,
+        discordId:
+            interaction.user.id,
 
-                    tijolos,
+        tijolos:
+            dados,
 
-                    materiais
+        materiais:
+            dinheiroSujo
 
-                });
+    });
 
             let painel =
                 await obterPainelMembro(
@@ -1661,27 +1663,40 @@ Clique em **Continuar Configuração** para informar:
                                         false
                                 },
 
-                                {
-                                    name:
-                                        "🧱 Tijolos",
+                           {
+    name:
+        "💳 Dados",
 
-                                    value:
-                                        tijolos || "0",
+    value:
+        dados || "0",
 
-                                    inline:
-                                        true
-                                },
+    inline:
+        true
+},
+{
+    name:
+        "💵 Dinheiro Sujo",
 
-                                {
-                                    name:
-                                        "🔩 Materiais",
+    value:
+        Number(
+            dinheiroSujo || 0
+        ).toLocaleString(
+            "pt-BR",
+            {
+                style:
+                    "currency",
 
-                                    value:
-                                        materiais || "0",
+                currency:
+                    "BRL",
 
-                                    inline:
-                                        true
-                                },
+                maximumFractionDigits:
+                    0
+            }
+        ),
+
+    inline:
+        true
+},
 
                                 {
                                     name:
@@ -1750,26 +1765,39 @@ Clique em **Continuar Configuração** para informar:
                         .addFields(
 
                             {
-                                name:
-                                    "🧱 Tijolos",
+    name:
+        "💳 Dados",
 
-                                value:
-                                    `+${tijolos || "0"} unidades`,
+    value:
+        `+${dados || "0"} unidades`,
 
-                                inline:
-                                    true
-                            },
+    inline:
+        true
+},
+{
+    name:
+        "💵 Dinheiro Sujo",
 
-                            {
-                                name:
-                                    "🔩 Materiais",
+    value:
+        `+${Number(
+            dinheiroSujo || 0
+        ).toLocaleString(
+            "pt-BR",
+            {
+                style:
+                    "currency",
 
-                                value:
-                                    `+${materiais || "0"} unidades`,
+                currency:
+                    "BRL",
 
-                                inline:
-                                    true
-                            },
+                maximumFractionDigits:
+                    0
+            }
+        )}`,
+
+    inline:
+        true
+},
 
                             {
                                 name:

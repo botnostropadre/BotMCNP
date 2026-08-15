@@ -4,8 +4,9 @@ const db = require("../database/database");
 // METAS
 // ======================================================
 
-const META_TIJOLOS_SEMANAL = 100;
-const META_MATERIAIS_DIARIA = 200;
+const META_DADOS_DIARIA = 350;
+const META_DADOS_SEMANAL = 1750;
+const META_DINHEIRO_SUJO_SEMANAL = 500000;
 
 // ======================================================
 // AUXILIARES DE DATA
@@ -193,9 +194,7 @@ function normalizarQuantidade(valor) {
 
 }
 
-// ======================================================
-// REGISTRAR LANÇAMENTO
-// ======================================================
+
 
 async function registrarFarm({
     discordId,
@@ -203,33 +202,50 @@ async function registrarFarm({
     materiais
 }) {
 
-    const quantidadeTijolos =
-        normalizarQuantidade(tijolos);
+    // ==================================================
+    // INTERNAMENTE:
+    // tijolos = Dados
+    // materiais = Dinheiro Sujo
+    // ==================================================
 
-    const quantidadeMateriais =
-        normalizarQuantidade(materiais);
+    const quantidadeDados =
+        normalizarQuantidade(
+            tijolos
+        );
+
+    const quantidadeDinheiroSujo =
+        normalizarQuantidade(
+            materiais
+        );
 
     if (
-        quantidadeTijolos === 0 &&
-        quantidadeMateriais === 0
+        quantidadeDados === 0 &&
+        quantidadeDinheiroSujo === 0
     ) {
 
         throw new Error(
-            "Informe ao menos uma quantidade de Tijolos ou Materiais."
+            "Informe ao menos uma quantidade de Dados ou Dinheiro Sujo."
         );
 
     }
 
-    const agora = new Date();
+    const agora =
+        new Date();
 
     const dataRegistro =
-        obterDataRegistro(agora);
+        obterDataRegistro(
+            agora
+        );
 
     const dataDia =
-        obterDataDia(agora);
+        obterDataDia(
+            agora
+        );
 
     const semanaInicio =
-        obterInicioSemana(agora);
+        obterInicioSemana(
+            agora
+        );
 
     await executar(
         `
@@ -246,8 +262,8 @@ async function registrarFarm({
         `,
         [
             discordId,
-            quantidadeTijolos,
-            quantidadeMateriais,
+            quantidadeDados,
+            quantidadeDinheiroSujo,
             dataRegistro,
             dataDia,
             semanaInicio
@@ -257,9 +273,6 @@ async function registrarFarm({
     return obterResumoMembro(
         discordId
     );
-
-}
-
 // ======================================================
 // OBTER RESUMO DO MEMBRO
 // ======================================================
@@ -270,10 +283,18 @@ async function obterResumoMembro(
 ) {
 
     const semanaInicio =
-        obterInicioSemana(data);
+        obterInicioSemana(
+            data
+        );
 
     const dataDia =
-        obterDataDia(data);
+        obterDataDia(
+            data
+        );
+
+    // ==================================================
+    // TOTAIS DA SEMANA
+    // ==================================================
 
     const totaisSemana =
         await consultarUm(
@@ -282,12 +303,12 @@ async function obterResumoMembro(
                     COALESCE(
                         SUM(tijolos),
                         0
-                    ) AS tijolosSemana,
+                    ) AS dadosSemana,
 
                     COALESCE(
                         SUM(materiais),
                         0
-                    ) AS materiaisSemana
+                    ) AS dinheiroSujoSemana
 
                 FROM farmRegistros
 
@@ -300,14 +321,18 @@ async function obterResumoMembro(
             ]
         );
 
+    // ==================================================
+    // TOTAL DE DADOS DO DIA
+    // ==================================================
+
     const totaisDia =
         await consultarUm(
             `
                 SELECT
                     COALESCE(
-                        SUM(materiais),
+                        SUM(tijolos),
                         0
-                    ) AS materiaisDia
+                    ) AS dadosDia
 
                 FROM farmRegistros
 
@@ -319,6 +344,10 @@ async function obterResumoMembro(
                 dataDia
             ]
         );
+
+    // ==================================================
+    // ÚLTIMO REGISTRO
+    // ==================================================
 
     const ultimoRegistro =
         await consultarUm(
@@ -339,75 +368,120 @@ async function obterResumoMembro(
             ]
         );
 
-    const tijolosSemana =
+    // ==================================================
+    // CONVERTER TOTAIS
+    // ==================================================
+
+    const dadosSemana =
         Number(
-            totaisSemana?.tijolosSemana || 0
+            totaisSemana?.dadosSemana || 0
         );
 
-    const materiaisDia =
+    const dadosDia =
         Number(
-            totaisDia?.materiaisDia || 0
+            totaisDia?.dadosDia || 0
         );
 
-    const excedenteTijolos =
-        Math.max(
-            0,
-            tijolosSemana -
-            META_TIJOLOS_SEMANAL
+    const dinheiroSujoSemana =
+        Number(
+            totaisSemana?.dinheiroSujoSemana || 0
         );
+}
 
-    const faltamTijolos =
-        Math.max(
-            0,
-            META_TIJOLOS_SEMANAL -
-            tijolosSemana
-        );
+// ======================================================
+// META DIÁRIA DE DADOS
+// ======================================================
 
-    const excedenteMateriais =
-        Math.max(
-            0,
-            materiaisDia -
-            META_MATERIAIS_DIARIA
-        );
+const excedenteDadosDia =
+    Math.max(
+        0,
+        dadosDia -
+        META_DADOS_DIARIA
+    );
 
-    const faltamMateriais =
-        Math.max(
-            0,
-            META_MATERIAIS_DIARIA -
-            materiaisDia
-        );
+const faltamDadosDia =
+    Math.max(
+        0,
+        META_DADOS_DIARIA -
+        dadosDia
+    );
 
-    return {
+// ======================================================
+// META SEMANAL DE DADOS
+// ======================================================
 
-        discordId,
+const excedenteDadosSemana =
+    Math.max(
+        0,
+        dadosSemana -
+        META_DADOS_SEMANAL
+    );
 
-        semanaInicio,
+const faltamDadosSemana =
+    Math.max(
+        0,
+        META_DADOS_SEMANAL -
+        dadosSemana
+    );
 
-        dataDia,
+// ======================================================
+// META SEMANAL DE DINHEIRO SUJO
+// ======================================================
 
-        tijolosSemana,
+const excedenteDinheiroSujoSemana =
+    Math.max(
+        0,
+        dinheiroSujoSemana -
+        META_DINHEIRO_SUJO_SEMANAL
+    );
 
-        materiaisDia,
+const faltamDinheiroSujoSemana =
+    Math.max(
+        0,
+        META_DINHEIRO_SUJO_SEMANAL -
+        dinheiroSujoSemana
+    );
 
-        metaTijolosSemanal:
-            META_TIJOLOS_SEMANAL,
+return {
 
-        metaMateriaisDiaria:
-            META_MATERIAIS_DIARIA,
+    discordId,
 
-        excedenteTijolos,
+    semanaInicio,
 
-        faltamTijolos,
+    dataDia,
 
-        excedenteMateriais,
+    dadosDia,
 
-        faltamMateriais,
+    dadosSemana,
 
-        ultimaAtualizacao:
-            ultimoRegistro?.dataRegistro ||
-            "Nenhum registro realizado"
+    dinheiroSujoSemana,
 
-    };
+    metaDadosDiaria:
+        META_DADOS_DIARIA,
+
+    metaDadosSemanal:
+        META_DADOS_SEMANAL,
+
+    metaDinheiroSujoSemanal:
+        META_DINHEIRO_SUJO_SEMANAL,
+
+    excedenteDadosDia,
+
+    faltamDadosDia,
+
+    excedenteDadosSemana,
+
+    faltamDadosSemana,
+
+    excedenteDinheiroSujoSemana,
+
+    faltamDinheiroSujoSemana,
+
+    ultimaAtualizacao:
+        ultimoRegistro?.dataRegistro ||
+        "Nenhum registro realizado"
+
+};
 
 }
 
@@ -508,42 +582,42 @@ async function obterRelatorioSemanal(
         obterInicioSemana(data);
 
     return consultarTodos(
-        `
-            SELECT
-                fr.discordId,
+    `
+        SELECT
+            fr.discordId,
 
-                fm.nomeExibicao,
+            fm.nomeExibicao,
 
-                COALESCE(
-                    SUM(fr.tijolos),
-                    0
-                ) AS tijolos,
+            COALESCE(
+                SUM(fr.tijolos),
+                0
+            ) AS dados,
 
-                COALESCE(
-                    SUM(fr.materiais),
-                    0
-                ) AS materiais
+            COALESCE(
+                SUM(fr.materiais),
+                0
+            ) AS dinheiroSujo
 
-            FROM farmRegistros fr
+        FROM farmRegistros fr
 
-            LEFT JOIN farmMembros fm
-                ON fm.discordId =
-                   fr.discordId
+        LEFT JOIN farmMembros fm
+            ON fm.discordId =
+               fr.discordId
 
-            WHERE fr.semanaInicio = ?
+        WHERE fr.semanaInicio = ?
 
-            GROUP BY
-                fr.discordId,
-                fm.nomeExibicao
+        GROUP BY
+            fr.discordId,
+            fm.nomeExibicao
 
-            ORDER BY
-                tijolos DESC,
-                materiais DESC
-        `,
-        [
-            semanaInicio
-        ]
-    );
+        ORDER BY
+            dados DESC,
+            dinheiroSujo DESC
+    `,
+    [
+        semanaInicio
+    ]
+);
 
 }
 
@@ -593,8 +667,9 @@ async function resetarTodos() {
 
 module.exports = {
 
-    META_TIJOLOS_SEMANAL,
-    META_MATERIAIS_DIARIA,
+    META_DADOS_DIARIA,
+    META_DADOS_SEMANAL,
+    META_DINHEIRO_SUJO_SEMANAL,
 
     obterInicioSemana,
     obterDataDia,

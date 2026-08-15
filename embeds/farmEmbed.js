@@ -81,21 +81,57 @@ function criarTextoProgresso(
     registrado,
     meta,
     excedente,
-    faltam
+    faltam,
+    tipo = "unidades"
 ) {
 
-    if (registrado >= meta) {
+    const formatarValor =
+        valor => {
+
+            if (
+                tipo ===
+                "dinheiro"
+            ) {
+
+                return Number(
+                    valor || 0
+                ).toLocaleString(
+                    "pt-BR",
+                    {
+                        style:
+                            "currency",
+
+                        currency:
+                            "BRL",
+
+                        maximumFractionDigits:
+                            0
+                    }
+                );
+
+            }
+
+            return (
+                `${formatarNumero(valor)} unidades`
+            );
+
+        };
+
+    if (
+        registrado >=
+        meta
+    ) {
 
         return (
             `✅ **Meta concluída**\n` +
-            `🎁 Você tem **${formatarNumero(excedente)} unidades a receber**.`
+            `🎁 Excedente: **${formatarValor(excedente)}**.`
         );
 
     }
 
     return (
         `🟡 **Meta em andamento**\n` +
-        `⏳ Faltam **${formatarNumero(faltam)} unidades** para atingir a meta.`
+        `⏳ Faltam **${formatarValor(faltam)}** para atingir a meta.`
     );
 
 }
@@ -105,13 +141,13 @@ function criarTextoProgresso(
 // ======================================================
 
 function criarStatusGeral(
-    tijolosConcluido,
-    materiaisConcluido
+    dadosConcluido,
+    dinheiroSujoConcluido
 ) {
 
     if (
-        tijolosConcluido &&
-        materiaisConcluido
+        dadosConcluido &&
+        dinheiroSujoConcluido
     ) {
 
         return "🟢 Todas as metas concluídas.";
@@ -119,32 +155,32 @@ function criarStatusGeral(
     }
 
     if (
-        tijolosConcluido &&
-        !materiaisConcluido
+        dadosConcluido &&
+        !dinheiroSujoConcluido
     ) {
 
         return (
-            "🟢 Meta de Tijolos concluída.\n" +
-            "🟡 Meta de Materiais em andamento."
+            "🟢 Meta de Dados concluída.\n" +
+            "🟡 Meta de Dinheiro Sujo em andamento."
         );
 
     }
 
     if (
-        !tijolosConcluido &&
-        materiaisConcluido
+        !dadosConcluido &&
+        dinheiroSujoConcluido
     ) {
 
         return (
-            "🟡 Meta de Tijolos em andamento.\n" +
-            "🟢 Meta de Materiais concluída."
+            "🟡 Meta de Dados em andamento.\n" +
+            "🟢 Meta de Dinheiro Sujo concluída."
         );
 
     }
 
     return (
-        "🟡 Meta de Tijolos em andamento.\n" +
-        "🟡 Meta de Materiais em andamento."
+        "🟡 Meta de Dados em andamento.\n" +
+        "🟡 Meta de Dinheiro Sujo em andamento."
     );
 
 }
@@ -158,83 +194,152 @@ function criarFarmEmbed(
     resumo
 ) {
 
-    const tijolosSemana =
+    const dadosDia =
         Number(
-            resumo.tijolosSemana || 0
+            resumo.dadosDia || 0
         );
 
-    const materiaisDia =
+    const dadosSemana =
         Number(
-            resumo.materiaisDia || 0
+            resumo.dadosSemana || 0
         );
 
-    const metaTijolos =
+    const dinheiroSujoSemana =
         Number(
-            resumo.metaTijolosSemanal || 100
+            resumo.dinheiroSujoSemana || 0
         );
 
-    const metaMateriais =
+    const metaDadosDiaria =
         Number(
-            resumo.metaMateriaisDiaria || 200
+            resumo.metaDadosDiaria || 350
         );
 
-    const porcentagemTijolos =
+    const metaDadosSemanal =
+        Number(
+            resumo.metaDadosSemanal || 1750
+        );
+
+    const metaDinheiroSujoSemanal =
+        Number(
+            resumo.metaDinheiroSujoSemanal || 500000
+        );
+
+    const porcentagemDadosDia =
         calcularPorcentagem(
-            tijolosSemana,
-            metaTijolos
+            dadosDia,
+            metaDadosDiaria
         );
 
-    const porcentagemMateriais =
+    const porcentagemDadosSemana =
         calcularPorcentagem(
-            materiaisDia,
-            metaMateriais
+            dadosSemana,
+            metaDadosSemanal
         );
 
-    const barraTijolos =
+    const porcentagemDinheiroSujo =
+        calcularPorcentagem(
+            dinheiroSujoSemana,
+            metaDinheiroSujoSemanal
+        );
+
+    const barraDadosDia =
         criarBarraProgresso(
-            tijolosSemana,
-            metaTijolos
+            dadosDia,
+            metaDadosDiaria
         );
 
-    const barraMateriais =
+    const barraDadosSemana =
         criarBarraProgresso(
-            materiaisDia,
-            metaMateriais
+            dadosSemana,
+            metaDadosSemanal
         );
 
-    const tijolosConcluido =
-        tijolosSemana >= metaTijolos;
-
-    const materiaisConcluido =
-        materiaisDia >= metaMateriais;
-
-    const textoTijolos =
-        criarTextoProgresso(
-            tijolosSemana,
-            metaTijolos,
-            resumo.excedenteTijolos,
-            resumo.faltamTijolos
+    const barraDinheiroSujo =
+        criarBarraProgresso(
+            dinheiroSujoSemana,
+            metaDinheiroSujoSemanal
         );
 
-    const textoMateriais =
+    const dadosConcluido =
+        dadosSemana >=
+        metaDadosSemanal;
+
+    const dinheiroSujoConcluido =
+        dinheiroSujoSemana >=
+        metaDinheiroSujoSemanal;
+
+    const textoDadosDia =
         criarTextoProgresso(
-            materiaisDia,
-            metaMateriais,
-            resumo.excedenteMateriais,
-            resumo.faltamMateriais
+            dadosDia,
+            metaDadosDiaria,
+            resumo.excedenteDadosDia,
+            resumo.faltamDadosDia
+        );
+
+    const textoDadosSemana =
+        criarTextoProgresso(
+            dadosSemana,
+            metaDadosSemanal,
+            resumo.excedenteDadosSemana,
+            resumo.faltamDadosSemana
+        );
+
+    const textoDinheiroSujo =
+        criarTextoProgresso(
+            dinheiroSujoSemana,
+            metaDinheiroSujoSemanal,
+            resumo.excedenteDinheiroSujoSemana,
+            resumo.faltamDinheiroSujoSemana,
+            "dinheiro"
         );
 
     const statusGeral =
         criarStatusGeral(
-            tijolosConcluido,
-            materiaisConcluido
+            dadosConcluido,
+            dinheiroSujoConcluido
         );
+
+    const dinheiroSujoFormatado =
+        dinheiroSujoSemana
+            .toLocaleString(
+                "pt-BR",
+                {
+                    style:
+                        "currency",
+
+                    currency:
+                        "BRL",
+
+                    maximumFractionDigits:
+                        0
+                }
+            );
+
+    const metaDinheiroSujoFormatada =
+        metaDinheiroSujoSemanal
+            .toLocaleString(
+                "pt-BR",
+                {
+                    style:
+                        "currency",
+
+                    currency:
+                        "BRL",
+
+                    maximumFractionDigits:
+                        0
+                }
+            );
 
     return new EmbedBuilder()
 
-        .setColor(COLORS.VERDE)
+        .setColor(
+            COLORS.VERDE
+        )
 
-        .setTitle("📦 Planilha de Farm")
+        .setTitle(
+            "📦 Planilha de Farm"
+        )
 
         .setDescription(
 `👤 **Integrante**
@@ -242,31 +347,45 @@ ${nomeExibicao}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🧱 **TIJOLOS**
+💳 **DADOS — HOJE**
 
-\`${barraTijolos}\` **${porcentagemTijolos}%**
+\`${barraDadosDia}\` **${porcentagemDadosDia}%**
 
-**Registrado na semana:**  
-${formatarNumero(tijolosSemana)} unidades
+**Registrado hoje:**  
+${formatarNumero(dadosDia)} unidades
 
-**Meta semanal:**  
-${formatarNumero(metaTijolos)} unidades
+**Meta diária:**  
+${formatarNumero(metaDadosDiaria)} unidades
 
-${textoTijolos}
+${textoDadosDia}
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🔩 **MATERIAIS**
+💳 **DADOS — SEMANA**
 
-\`${barraMateriais}\` **${porcentagemMateriais}%**
+\`${barraDadosSemana}\` **${porcentagemDadosSemana}%**
 
-**Registrado hoje:**  
-${formatarNumero(materiaisDia)} unidades
+**Registrado na semana:**  
+${formatarNumero(dadosSemana)} unidades
 
-**Meta diária:**  
-${formatarNumero(metaMateriais)} unidades
+**Meta semanal:**  
+${formatarNumero(metaDadosSemanal)} unidades
 
-${textoMateriais}
+${textoDadosSemana}
+
+━━━━━━━━━━━━━━━━━━━━
+
+💵 **DINHEIRO SUJO — SEMANA**
+
+\`${barraDinheiroSujo}\` **${porcentagemDinheiroSujo}%**
+
+**Registrado na semana:**  
+${dinheiroSujoFormatado}
+
+**Meta semanal:**  
+${metaDinheiroSujoFormatada}
+
+${textoDinheiroSujo}
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -283,7 +402,6 @@ ${statusGeral}`
         .setTimestamp();
 
 }
-
 // ======================================================
 // EXPORTAÇÃO
 // ======================================================
