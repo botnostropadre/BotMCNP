@@ -666,7 +666,159 @@ async function resetarTodos() {
     return resultado.changes;
 
 }
+// ======================================================
+// AJUSTAR FARM MANUALMENTE
+// ======================================================
 
+async function ajustarFarm({
+    discordId,
+    tipo,
+    acao,
+    valor
+}) {
+
+    const quantidade =
+        normalizarQuantidade(
+            valor
+        );
+
+    if (
+        quantidade <= 0
+    ) {
+
+        throw new Error(
+            "O valor do ajuste deve ser maior que zero."
+        );
+
+    }
+
+    if (
+        ![
+            "dados",
+            "dinheiro"
+        ].includes(tipo)
+    ) {
+
+        throw new Error(
+            "Tipo de farm inválido."
+        );
+
+    }
+
+    if (
+        ![
+            "adicionar",
+            "remover"
+        ].includes(acao)
+    ) {
+
+        throw new Error(
+            "Ação de ajuste inválida."
+        );
+
+    }
+
+    const resumoAtual =
+        await obterResumoMembro(
+            discordId
+        );
+
+    // ==================================================
+    // VALIDAR REMOÇÃO
+    // ==================================================
+
+    if (
+        acao ===
+        "remover"
+    ) {
+
+        if (
+            tipo ===
+            "dados" &&
+            quantidade >
+            resumoAtual.dadosSemana
+        ) {
+
+            throw new Error(
+                `Não é possível remover ${quantidade} Dados. ` +
+                `O membro possui ${resumoAtual.dadosSemana} Dados nesta semana.`
+            );
+
+        }
+
+        if (
+            tipo ===
+            "dinheiro" &&
+            quantidade >
+            resumoAtual.dinheiroSujoSemana
+        ) {
+
+            throw new Error(
+                `Não é possível remover R$ ${quantidade.toLocaleString("pt-BR")}. ` +
+                `O membro possui R$ ${resumoAtual.dinheiroSujoSemana.toLocaleString("pt-BR")} nesta semana.`
+            );
+
+        }
+
+    }
+
+    const multiplicador =
+        acao ===
+        "adicionar"
+            ? 1
+            : -1;
+
+    const dados =
+        tipo ===
+        "dados"
+            ? quantidade *
+              multiplicador
+            : 0;
+
+    const dinheiroSujo =
+        tipo ===
+        "dinheiro"
+            ? quantidade *
+              multiplicador
+            : 0;
+
+    const agora =
+        new Date();
+
+    await executar(
+        `
+            INSERT INTO farmRegistros
+            (
+                discordId,
+                tijolos,
+                materiais,
+                dataRegistro,
+                dataDia,
+                semanaInicio
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+            discordId,
+            dados,
+            dinheiroSujo,
+            obterDataRegistro(
+                agora
+            ),
+            obterDataDia(
+                agora
+            ),
+            obterInicioSemana(
+                agora
+            )
+        ]
+    );
+
+    return obterResumoMembro(
+        discordId
+    );
+
+}
 // ======================================================
 // EXPORTAÇÕES
 // ======================================================
@@ -681,6 +833,7 @@ module.exports = {
     obterDataDia,
 
     registrarFarm,
+    ajustarFarm,
     obterResumoMembro,
 
     salvarPainelMembro,
