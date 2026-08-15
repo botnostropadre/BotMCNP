@@ -43,55 +43,68 @@ module.exports = {
                 PermissionFlagsBits.Administrator
             ),
 
-    async execute(
-        interaction
-    ) {
+  async execute(
+    interaction
+) {
 
-        try {
+    console.log(
+        "[SETUPPARCEIROS] execute iniciado"
+    );
 
-            // ==================================================
-            // RESPONDER À INTERAÇÃO
-            // ==================================================
+    try {
 
-            await interaction.deferReply({
+        // ==================================================
+        // RESPONDER À INTERAÇÃO
+        // ==================================================
 
-                flags:
-                    MessageFlags.Ephemeral
+        await interaction.deferReply({
+
+            flags:
+                MessageFlags.Ephemeral
+
+        });
+
+        console.log(
+            "[SETUPPARCEIROS] deferReply OK"
+        );
+
+        // ==================================================
+        // LOCALIZAR CANAL
+        // ==================================================
+
+        const canal =
+            interaction.guild.channels.cache.get(
+                CANAL_REGISTRAR_PARCEIROS
+            ) ||
+            await interaction.guild.channels
+                .fetch(
+                    CANAL_REGISTRAR_PARCEIROS
+                )
+                .catch(
+                    () => null
+                );
+
+        console.log(
+            "[SETUPPARCEIROS] canal:",
+            canal?.id,
+            canal?.name
+        );
+
+        if (
+            !canal ||
+            !canal.isTextBased()
+        ) {
+
+            await interaction.editReply({
+
+                content:
+                    "❌ O canal de registro de parceiros não foi encontrado."
 
             });
 
-            // ==================================================
-            // LOCALIZAR CANAL
-            // ==================================================
+            return;
 
-            const canal =
-                interaction.guild.channels.cache.get(
-                    CANAL_REGISTRAR_PARCEIROS
-                ) ||
-                await interaction.guild.channels
-                    .fetch(
-                        CANAL_REGISTRAR_PARCEIROS
-                    )
-                    .catch(
-                        () => null
-                    );
-
-            if (
-                !canal ||
-                !canal.isTextBased()
-            ) {
-
-                await interaction.editReply({
-
-                    content:
-                        "❌ O canal de registro de parceiros não foi encontrado."
-
-                });
-
-                return;
-
-            }
-
+        }
             // ==================================================
             // CRIAR EMBED
             // ==================================================
@@ -141,16 +154,24 @@ Após concluir o cadastro, o painel de parceiros será atualizado automaticament
             // ENVIAR PAINEL
             // ==================================================
 
-            await canal.send({
+            console.log(
+    "[SETUPPARCEIROS] enviando painel"
+);
 
-                embeds: [
-                    embed
-                ],
+await canal.send({
 
-                components:
-                    criarParceirosButton()
+    embeds: [
+        embed
+    ],
 
-            });
+    components:
+        criarParceirosButton()
+
+});
+
+console.log(
+    "[SETUPPARCEIROS] painel enviado"
+);
 
             // ==================================================
             // CONFIRMAÇÃO
