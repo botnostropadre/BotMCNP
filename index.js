@@ -558,7 +558,73 @@ if (!process.env.TOKEN) {
 // ======================================================
 // CONECTAR BOT
 // ======================================================
+client.on(
+    "debug",
+    info => {
 
+        if (
+            info.includes("WebSocket") ||
+            info.includes("IDENTIFY") ||
+            info.includes("HELLO") ||
+            info.includes("READY")
+        ) {
+
+            console.log(
+                "[DISCORD DEBUG]",
+                info
+            );
+
+        }
+
+    }
+);
+
+client.on(
+    "shardError",
+    error => {
+
+        console.error(
+            "[DISCORD SHARD ERROR]"
+        );
+
+        console.error(
+            error
+        );
+
+    }
+);
+
+client.on(
+    "shardDisconnect",
+    (
+        event,
+        shardId
+    ) => {
+
+        console.error(
+            "[DISCORD SHARD DISCONNECT]",
+            "Shard:",
+            shardId,
+            "Code:",
+            event.code,
+            "Reason:",
+            event.reason
+        );
+
+    }
+);
+
+client.on(
+    "shardReconnecting",
+    shardId => {
+
+        console.log(
+            "[DISCORD SHARD RECONNECTING]",
+            shardId
+        );
+
+    }
+);
 console.log(
     "[BOT] Tentando conectar ao Discord..."
 );
