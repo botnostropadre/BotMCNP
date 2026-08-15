@@ -289,6 +289,33 @@ client.on(
     "interactionCreate",
     async interaction => {
 
+        console.log(
+    "======================================"
+);
+
+console.log(
+    "[DISCORD] INTERAÇÃO RECEBIDA"
+);
+
+console.log(
+    "[DISCORD] Tipo:",
+    interaction.type
+);
+
+console.log(
+    "[DISCORD] Comando:",
+    interaction.commandName || "N/A"
+);
+
+console.log(
+    "[DISCORD] Usuário:",
+    interaction.user?.tag || interaction.user?.id
+);
+
+console.log(
+    "======================================"
+);
+
         const idadeInteracao =
             Date.now() -
             interaction.createdTimestamp;
