@@ -4,8 +4,8 @@ const db = require("../database/database");
 // METAS
 // ======================================================
 
-const META_DADOS_DIARIA = 350;
-const META_DADOS_SEMANAL = 1750;
+const META_DADOS_DIARIA = 500;
+const META_DADOS_SEMANAL = 2500;
 const META_DINHEIRO_SUJO_SEMANAL = 500000;
 
 // ======================================================

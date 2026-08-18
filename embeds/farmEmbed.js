@@ -210,14 +210,14 @@ function criarFarmEmbed(
         );
 
     const metaDadosDiaria =
-        Number(
-            resumo.metaDadosDiaria || 350
-        );
+    Number(
+        resumo.metaDadosDiaria || 500
+    );
 
-    const metaDadosSemanal =
-        Number(
-            resumo.metaDadosSemanal || 1750
-        );
+const metaDadosSemanal =
+    Number(
+        resumo.metaDadosSemanal || 2500
+    );
 
     const metaDinheiroSujoSemanal =
         Number(
@@ -230,12 +230,7 @@ function criarFarmEmbed(
             metaDadosDiaria
         );
 
-    const porcentagemDadosSemana =
-        calcularPorcentagem(
-            dadosSemana,
-            metaDadosSemanal
-        );
-
+    
     const porcentagemDinheiroSujo =
         calcularPorcentagem(
             dinheiroSujoSemana,
@@ -248,12 +243,7 @@ function criarFarmEmbed(
             metaDadosDiaria
         );
 
-    const barraDadosSemana =
-        criarBarraProgresso(
-            dadosSemana,
-            metaDadosSemanal
-        );
-
+    
     const barraDinheiroSujo =
         criarBarraProgresso(
             dinheiroSujoSemana,
@@ -276,14 +266,7 @@ function criarFarmEmbed(
             resumo.faltamDadosDia
         );
 
-    const textoDadosSemana =
-        criarTextoProgresso(
-            dadosSemana,
-            metaDadosSemanal,
-            resumo.excedenteDadosSemana,
-            resumo.faltamDadosSemana
-        );
-
+   
     const textoDinheiroSujo =
         criarTextoProgresso(
             dinheiroSujoSemana,
@@ -330,7 +313,14 @@ function criarFarmEmbed(
                         0
                 }
             );
+const mensagemMetaSemanalDados =
+    dadosConcluido
+        ? `
 
+━━━━━━━━━━━━━━━━━━━━
+
+✅ **META SEMANAL BATIDA COM SUCESSO!**`
+        : "";
     return new EmbedBuilder()
 
         .setColor(
@@ -359,19 +349,7 @@ ${formatarNumero(metaDadosDiaria)} unidades
 
 ${textoDadosDia}
 
-━━━━━━━━━━━━━━━━━━━━
-
-💳 **DADOS — SEMANA**
-
-\`${barraDadosSemana}\` **${porcentagemDadosSemana}%**
-
-**Registrado na semana:**  
-${formatarNumero(dadosSemana)} unidades
-
-**Meta semanal:**  
-${formatarNumero(metaDadosSemanal)} unidades
-
-${textoDadosSemana}
+${mensagemMetaSemanalDados}
 
 ━━━━━━━━━━━━━━━━━━━━
 

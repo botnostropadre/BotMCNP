@@ -85,10 +85,10 @@ Utilize o botão abaixo para registrar sua produção.
 💳 **Dados**
 
 Meta diária:
-**350 unidades**
+**500 unidades**
 
 Meta semanal:
-**1.750 unidades**
+**2.500 unidades**
 
 ━━━━━━━━━━━━━━━━━━━━
 
