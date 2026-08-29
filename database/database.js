@@ -9,6 +9,7 @@ const fs = require("fs");
 // No computador utiliza a pasta database.
 
 const pastaBanco =
+    process.env.SHARDCLOUD_DATA_DIR ||
     process.env.RAILWAY_VOLUME_MOUNT_PATH ||
     __dirname;
 
