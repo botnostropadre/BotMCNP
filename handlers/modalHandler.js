@@ -1643,21 +1643,159 @@ const dinheiroSujo =
                     `farm-${interaction.user.id}`;
 
                 canal =
-                    await interaction.guild.channels.create({
+    await interaction.guild.channels.create({
 
-                        name:
-                            nomeCanal,
+        name:
+            nomeCanal,
 
-                        type:
-                            0,
+        type:
+            0,
 
-                        parent:
-                            CATEGORIA_PLANILHAS,
+        parent:
+            CATEGORIA_PLANILHAS,
 
-                        topic:
-                            `Planilha de farm de ${nomeExibicao} • ${settings.mc.nome}`
+        topic:
+            `Planilha de farm de ${nomeExibicao} • ${settings.mc.nome}`,
 
-                    });
+        permissionOverwrites: [
+
+            // ==========================================
+            // BLOQUEAR TODOS DO SERVIDOR
+            // ==========================================
+
+            {
+                id:
+                    interaction.guild.roles.everyone.id,
+
+                deny: [
+                    "ViewChannel"
+                ]
+            },
+
+            // ==========================================
+            // MEMBRO DONO DA PLANILHA
+            // ==========================================
+
+            {
+                id:
+                    interaction.user.id,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // LIDERANÇA
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.lideranca,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // VICE LIDERANÇA
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.viceLideranca,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // GERÊNCIA
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.gerencia,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // RESPONSÁVEL ELITE
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.respElite,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // RESPONSÁVEL EVENTOS
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.respEventos,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // RESPONSÁVEL RECRUTAMENTO
+            // ==========================================
+
+            {
+                id:
+                    settings.cargos.recrutamento,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory"
+                ]
+            },
+
+            // ==========================================
+            // BOT
+            // ==========================================
+
+            {
+                id:
+                    interaction.client.user.id,
+
+                allow: [
+                    "ViewChannel",
+                    "SendMessages",
+                    "ReadMessageHistory",
+                    "ManageChannels"
+                ]
+            }
+
+        ]
+
+    });
 
             }
 
